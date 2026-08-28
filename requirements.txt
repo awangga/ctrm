@@ -1,0 +1,12 @@
+torch>=2.7        # CUDA build matching GPU (cu128 for Blackwell sm_120)
+numpy
+einops
+tqdm
+coolname
+pydantic
+argdantic
+omegaconf
+hydra-core
+huggingface_hub
+codecarbon>=2.3
+scipy             # curve_fit / bootstrap CIs (PROTOCOL §7) and significance tests (sig_test.py)

@@ -1,0 +1,41 @@
+diff --git a/pretrain.py b/pretrain.py
+index b9072e2..d275f8b 100644
+--- a/pretrain.py
++++ b/pretrain.py
+@@ -607,6 +607,17 @@ def launch(hydra_config: DictConfig):
+             metrics = train_batch(config, train_state, batch, global_batch_size, rank=RANK, world_size=WORLD_SIZE)
+ 
+             if RANK == 0 and metrics is not None:
++                import json as _json, time as _time, os as _os
++                _flat={}
++                for _k,_v in metrics.items():
++                    if hasattr(_v,"items"):
++                        for _kk,_vv in _v.items(): _flat[f"{_k}/{_kk}"]=float(_vv)
++                    else:
++                        try: _flat[_k]=float(_v)
++                        except: pass
++                _pl=_os.environ.get("TRM_PROGRESS_LOG")
++                if _pl:
++                    with open(_pl,"a") as _pf: _pf.write(_json.dumps({"phase":"train","step":int(train_state.step),"t":_time.time(),**_flat})+"\n")
+                 wandb.log(metrics, step=train_state.step)
+                 progress_bar.update(train_state.step - progress_bar.n)  # type: ignore
+             if config.ema:
+@@ -633,6 +644,18 @@ def launch(hydra_config: DictConfig):
+                 cpu_group=CPU_PROCESS_GROUP)
+ 
+             if RANK == 0 and metrics is not None:
++                import json as _json2, time as _time2, os as _os2
++                _ef={}
++                for _a,_b in metrics.items():
++                    if hasattr(_b,"items"):
++                        for _bb,_cc in _b.items(): _ef[f"{_a}/{_bb}"]=float(_cc)
++                    else:
++                        try: _ef[_a]=float(_b)
++                        except: pass
++                print("EVAL_METRICS_JSON step="+str(int(train_state.step)), _json2.dumps(_ef), flush=True)
++                _pl2=_os2.environ.get("TRM_PROGRESS_LOG")
++                if _pl2:
++                    with open(_pl2,"a") as _ef2: _ef2.write(_json2.dumps({"phase":"eval","step":int(train_state.step),"t":_time2.time(),**_ef})+"\n")
+                 wandb.log(metrics, step=train_state.step)
+                 
+             ############ Checkpointing

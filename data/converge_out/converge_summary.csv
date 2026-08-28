@@ -1,0 +1,2 @@
+tag,hidden,D_eff,seed,steps_target,wall_s,best_exact_pct,final_exact_pct,final_token_pct,smi_net_Wh,cc_gpu_Wh,gross_agree_pct
+h128_d36_converge_s0,128,36,0,80000,6026.4,17.1875,10.3516,68.545,292.1095,296.7139,98.91

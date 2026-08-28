@@ -1,0 +1,4 @@
+tag,hidden,D_eff,batch,ema,steps_target,wall_s,best_exact_pct,final_exact_pct,final_token_pct,smi_net_Wh,cc_gpu_Wh,gross_agree_pct
+h256_d18_recipe_b48_s0,256,18,48,True,1500,413.7,0.0,0,0,16.2424,16.6785,99.38
+h256_d18_recipe_b48_s0,256,18,48,True,800,355.0,0.0,0,0,14.887,15.2697,99.48
+h256_d18_recipe_b48_s0,256,18,48,True,800,280.9,0.0,0.0,8.3496,10.9517,11.2733,99.61
