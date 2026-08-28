@@ -2011,3 +2011,257 @@ diubah ke "ARC-AGI-1 and Maze-Hard depth grids, 5 seeds each".
 
 Dengan ini cacat yang sempat ikut ke v1/v2 tertutup bagi pembaca yang mengikuti concept DOI: README
 tak lagi menyuruh menjalankan `sig_test.py` (yang gagal), dan hasil ARC sudah n=5.
+
+---
+
+## Fase AZ: cermin kode di GitHub `awangga/ctrm`
+
+Penulis menyiapkan repo dan meminta paketnya ditaruh di sana.
+
+**Pembagian kanal.** Paket penuh 775 MB, dan 649 MB di antaranya adalah `progress_*.jsonl` (kurva
+per-langkah) plus 90 MB log training mentah. Menaruh itu di git berarti tiap clone menarik 775 MB
+selamanya, padahal data itu **sudah** terbit permanen di Zenodo ber-DOI. Jadi: GitHub membawa kode,
+protokol, dan artefak ringkas (summary CSV, deret daya 1 Hz, emisi CodeCarbon, laporan ablasi, vendor)
+= **37 MB**; Zenodo tetap arsip lengkap yang disitasi. README memuat banner eksplisit soal ini.
+
+**Keputusan penulis (via AskUserQuestion):**
+1. **Lisensi GPL-3.0 -> MIT.** Repo dibuat dengan GPL-3.0, tetapi Zenodo v1/v2/v3 sudah terbit
+   permanen sebagai MIT dan `THIRD_PARTY_LICENSES.md` menyatakan "the code and analysis written for
+   this study are MIT-licensed (see LICENSE)". Kode sama di bawah dua lisensi berbeda tak bisa dibela,
+   dan rekaman Zenodo tak bisa ditarik. Diganti ke MIT persis salinan paket Zenodo.
+2. **Naskah kini menyebut ctrm.** Membalik keputusan lama "cukup ZENODO saja tanpa repo github".
+   Ditambahkan di dua tempat: *Data availability* dan *Reproducibility*, keduanya menegaskan Zenodo
+   sebagai **version of record untuk sitasi** dan GitHub sebagai cermin untuk menjelajah/isu.
+
+**Cacat README yang tertangkap saat menyusun** (README disalin dari paket Zenodo, jadi mewarisi
+klaim yang tak berlaku di sini): baris isi menyebut `.zenodo.json` yang tak ada di repo ini;
+"faithful-recipe regime (the manuscript results, **37 runs**)" padahal 49; Maze dan ARC masih ditulis
+"3 seeds" padahal 5; dan kalimat "every empirical number traces to a run artifact in `data/`" tak lagi
+benar setelah kurva per-langkah ditinggal di Zenodo. Keempatnya diperbaiki.
+
+**Diuji dari layout repo:** `python3 code/stats_table.py data` mereproduksi 10 kontras + 4 ANOVA
+persis Tabel A.1, dan `reconcile_totals.py --data-root data` mengembalikan 49 run / 16,1 kWh.
+
+Commit `7318337` di `github.com/awangga/ctrm`. Naskah 40 halaman, 0 undefined.
+
+---
+
+## Fase BA: tanggal surat pengantar diisi; dua sitasi di daftar reviewer dikoreksi
+
+Tanggal submit diisi **28 Agustus 2026**, penanda `_[isi tanggal submit]_` dibuang.
+
+**Sapuan penanda TODO menemukan satu lagi** di blok *Suggested reviewers*, yang menyatakan afiliasi dan
+email kandidat belum diverifikasi. Bagian email/afiliasi memang tugas penulis (perlu cek ke halaman
+institusi), tetapi **klaim kepengarangannya bisa diverifikasi ke `references.bib`**, dan pemeriksaan itu
+menemukan dua kesalahan:
+
+1. **Wesley Armour** dideskripsikan sebagai "senior author of the SC24 work on **bias in GPU power
+   sampling**". Judul sebenarnya (`Yang2024`): *"Accurate and Convenient Energy Measurements for GPUs:
+   A Detailed Study of NVIDIA GPU's Built-In Power Sensor"*. Bukan soal bias sampling. Dikoreksi dan
+   ditambahi rujukan eksplisit ke sitasi naskahnya.
+2. **Samuel Xavier-de-Souza** disebut senior author *"Measuring the energy consumption of neural
+   networks"*. Judul sebenarnya (`OliveiraFilho2025`): *"Phoeni6: A systematic approach for evaluating
+   the energy consumption of neural networks"*. Dikoreksi.
+
+Ketiga kandidat lain terverifikasi tepat: Jay dan Lefèvre memang co-author `Jay2023` (CCGrid 2023,
+*An experimental comparison of software-based power meters*), García-Sánchez co-author
+`Aquinobritez2025` (Sensors). Catatan: pencarian nama awal sempat melaporkan Lefèvre dan Armour "tidak
+ada di .bib" karena pola grep tak menangkap "Lefevre" tanpa diakritik dan Armour sebagai penulis ketiga;
+keduanya sebenarnya ada. Itu kesalahan pencarian, bukan kesalahan naskah.
+
+Komentar TODO diperbarui: menyatakan bahwa klaim kepengarangan **sudah** diverifikasi ke `.bib`, dan yang
+tersisa hanya email + afiliasi terkini yang diminta formulir Elsevier.
+
+Surat pengantar: 993 kata, tak ada angka basi.
+
+---
+
+## Fase BB: laporan kemajuan DIKTI (bulan ke-7)
+
+Penulis menyediakan folder `lapkemajuan/` berisi `README.md` (kerangka isian BIMA) dan
+*Template Laporan Kemajuan 2026.docx* (poin C sampai H).
+
+**Disusun:** `lapkemajuan/README.md` (Ringkasan, Keyword, daftar bukti pendukung) dan
+`substansi_laporan_kemajuan.md` -> `.pdf` (6 halaman) mengikuti struktur template C-H.
+
+**Bagian tersulit: poin F, karena tiga janji proposal tidak dipenuhi apa adanya.** Diputuskan
+melaporkannya terbuka beserta alasan ilmiahnya, bukan dipoles:
+
+1. **Scaling law A(P,D) dan E(P,D) dengan R2 >= 0,90 tidak diklaim pada sumbu akurasi.** Alasan:
+   rentang skala 1,5-2 dex di bawah bar yang lazim, dan lebih menentukan, **arah efeknya berbalik
+   antar tugas** sehingga satu eksponen tunggal akan menyembunyikan temuan yang justru paling
+   menarik. Dilaporkan bahwa target R2 >= 0,90 justru **terlampaui pada sumbu energi**
+   (b = 0,84, CI [0,75, 0,92], R2 = 0,98).
+2. **144 sesi -> 91 run (49 utama).** Bukan pengurangan cakupan melainkan perubahan desain: grid
+   penuh 8x6 pada anggaran langkah sama akan menghasilkan perbandingan iso-parameter yang tidak
+   adil. Anggaran run dialihkan dari memperbanyak titik ke memperkuat daya statistik tiap titik;
+   tanpa itu efek Maze akan tetap terbaca nol.
+3. **Akurasi >= 90% dan ARC >= 35% tidak tercapai.** Dilaporkan apa adanya (Sudoku exact 62,4%;
+   Maze dan ARC exact = 0 sehingga dipakai token), dengan penegasan bahwa yang dibandingkan adalah
+   **urutan** pada compute setara, bukan skor mutlak.
+
+Ditemukan pula satu substitusi instrumen yang belum pernah dicatat: proposal menjanjikan validasi
+silang terhadap **CarbonTracker**, realisasinya memakai integrasi `nvidia-smi power.draw`. Alasannya
+sah (nvidia-smi membaca sensor kartu langsung sehingga lebih independen terhadap CodeCarbon yang
+sama-sama lewat NVML), tetapi tetap ditulis eksplisit di poin C.3.
+
+**Verifikasi sebelum jadi PDF.** Seluruh angka laporan dicek ulang ke summary CSV (akurasi tiga tugas
+cocok semua), dan kelima sitasi diverifikasi ke API otoritatif: CCGrid 2023 (CrossRef, halaman
+106-118 dikonfirmasi), Phoeni6 (CrossRef), SC24 (CrossRef), TRM dan Kaplan (DataCite). Catatan:
+Kaplan2020 tidak ada di `references.bib` naskah, jadi DOI-nya diverifikasi langsung ke DataCite.
+
+**Cacat render yang tertangkap saat memeriksa PDF:** rumus `alpha.P^beta.D^gamma` terbaca sebagai
+superscript liar di pandoc; ditulis ulang sebagai matematika LaTeX. Juga dibuang rujukan "(Tabel 1)"
+yang sebenarnya menunjuk tabel di naskah artikel, bukan di laporan ini.
+
+**Revisi fase BB: laporan difokuskan ke Tahun ke-1 saja** (arahan penulis). Dibuang: subseksi D.3 yang
+menguraikan luaran Tahun 2 (diganti catatan satu kalimat bahwa belum jatuh tempo), penjadwalan Tahun 2
+di poin E, dan subseksi G.2/G.3 yang menguraikan Tahap 4-6 beserta peta jalan dua tahun. Poin G kini
+seluruhnya tentang sisa Tahun 1 (bulan ke-8 sampai ke-12), ditutup satu kalimat tentang tahun
+berikutnya karena template memang memintanya. Header memuat baris **Cakupan** eksplisit.
+Dua sebutan lintas-tahun sengaja dipertahankan: perbandingan "melampaui janji proposal yang menempatkan
+rilis dataset pada bulan ke-23/24" (justru memperkuat capaian Tahun 1) dan satu kalimat penutup G.
+2375 -> 2305 kata, tetap 6 halaman.
+
+**Koreksi fase BB (ditemukan penulis): daftar pustaka tanpa sitasi.** Poin H memuat lima rujukan
+bernomor, tetapi tidak satu pun `[n]` muncul di badan teks. Template mensyaratkan penomoran
+**menurut urutan pengutipan** dan hanya mencantumkan pustaka yang benar-benar disitasi, jadi daftar
+tanpa sitasi melanggar keduanya sekaligus. Kelima sitasi disisipkan di titik yang memang memerlukan
+rujukan: [1] TRM upstream di C.2, [2] selisih antar alat ukur energi perangkat lunak di C.3,
+[3] perilaku pencuplikan sensor daya NVIDIA di C.3, [4] preseden venue Phoeni6 di D.1, dan
+[5] tradisi Kaplan pada pembahasan scaling law di F.1. Diverifikasi: urutan kemunculan di badan teks
+tepat 1,2,3,4,5 dan himpunan yang didaftar sama dengan himpunan yang disitasi.
+
+**Audit kepatuhan template (diminta penulis) menemukan dua pelanggaran.**
+
+1. **Penjelasan di tiap poin terhapus.** Template menyatakan tegas: "Dilarang menghapus/memodifikasi
+   template ataupun menghapus penjelasan di setiap poin." Laporan hanya memuat judul C-H tanpa satu
+   pun teks penjelasannya (0 dari 6). Diperbaiki: keenam penjelasan diekstrak **verbatim** dari
+   `.docx` dan disisipkan di bawah judulnya masing-masing sebagai kutipan miring, sehingga jelas
+   terbedakan dari isi kami.
+2. **Tidak ada gambar/grafik.** Poin C menyarankan "Penyajian data dapat berupa gambar, tabel,
+   grafik"; laporan baru punya tabel. Ditambahkan dua figur dari naskah: Gambar 1 energi iso-akurasi
+   (di C.4, menopang angka hemat 53%) dan Gambar 2 peta rezim (di sintesis C.4).
+
+Sekalian tertangkap: caption pandoc terbaca "Figure 1" pada dokumen berbahasa Indonesia; diperbaiki
+dengan `-V lang=id` sehingga menjadi "Gambar 1".
+
+Catatan yang menenangkan: penjelasan poin E ternyata memuat kalimat "untuk penelitian dasar
+(KATALIS, Fundamental, ...) boleh mengisi bagian ini (tidak wajib) jika melibatkan mitra", sehingga
+jawaban kami yang menyatakan tidak ada mitra sudah tepat.
+
+Verifikasi akhir: 6/6 judul ada, 6/6 penjelasan verbatim ada, tiap poin terisi (C 1197 kata, D 247,
+E 42, F 563, G 185, H 172), sitasi badan teks urut 1-5, 2 gambar + 7 tabel, 8 halaman.
+
+**Koreksi lanjutan (ditemukan penulis): gambar tak tampil di markdown.** Figur disalin sebagai `.pdf`
+sehingga terrender di PDF hasil pandoc tetapi **kosong** pada penampil markdown (GitHub, editor).
+Dikonversi ke PNG 300 dpi (`regime_map.png` 1987x823 px, `iso_akurasi.png` 973x699 px), cukup untuk
+kualitas cetak dan tampil di kedua kanal. Salinan `.pdf` di `lapkemajuan/gambar/` dihapus supaya tidak
+ada dua berkas gambar yang sama dalam satu folder dan bisa saling menyimpang; sumber vektornya tetap
+ada di `manuscript/figures/` dan di paket Zenodo.
+
+**KOREKSI KEJUJURAN (ditemukan penulis): judul penelitian di laporan adalah karangan saya sendiri.**
+Laporan kemajuan menulis judul "Frontier Energi-Akurasi Recursion Depth pada Tiny Recursive Models:
+Pendekatan Green AI untuk Penalaran Simbolik". Itu **tidak pernah ada**; saya menyusunnya dari isi
+naskah alih-alih membaca judul resmi. Judul yang benar, dikonfirmasi dari dokumen proposal yang
+diajukan (`proposal/dokumen/document_common_Isian_Substansi_Proposal_...pdf`, bagian A):
+
+> **Hukum Penskalaan Model Kecerdasan Buatan Hemat Energi: Pendekatan Berkelanjutan untuk
+> Transformasi Digital Pendidikan Tinggi Indonesia**
+
+Catatan penting: berkas `proposal/A_judul_penelitian.md` memuat judul **berbeda lagi** ("Scaling Laws
+untuk Arsitektur Rekursif: Teori Baru Optimasi Energi ..."), yakni draf yang berubah sebelum submit.
+**Dokumen PDF yang diajukan adalah rujukan yang sah, bukan berkas markdown draf itu.**
+
+**Konsekuensi ke poin F, dan ini yang membuat koreksinya bukan sekadar kosmetik.** Judul resmi memuat
+frasa **Hukum Penskalaan**, yaitu persis hal yang kita putuskan tidak diklaim. Penilai yang membaca
+judul lalu tidak menemukan hukum akan langsung menandainya. F.1 ditulis ulang agar menjawab hal itu
+di depan, dan pembagiannya dinyatakan tegas:
+- **Hukum penskalaan ENERGI tegak dan tervalidasi**: b = 0,84, CI [0,75, 0,92], R2 = 0,98, jadi target
+  R2 >= 0,90 terlampaui. Hukum inilah yang menopang perencanaan anggaran energi.
+- **Hukum penskalaan AKURASI tidak diklaim**, dengan dua alasan yang sudah dicatat sebelumnya, ditutup
+  kalimat: menyajikan satu eksponen akurasi yang rapi sementara datanya berbalik arah akan memenuhi
+  janji secara harfiah dan melanggarnya secara ilmiah.
+
+Judul lama disapu; nol sisa di seluruh repo. Laporan tetap 8 halaman.
+
+---
+
+## Fase BC: audit pustaka mengikuti gerbang skill `submit`
+
+Penulis menanyakan apakah kumpulan skill di `github.com/nulis-not-just-writing/skills` membantu tahap
+persiapan submisi. Ditelaah, lalu gerbang yang **belum pernah kita jalankan sistematis** dieksekusi.
+
+**Sebagian besar gerbangnya sudah kita lewati lebih dulu** lewat fase AP sampai AX: kecocokan lingkup
+(12 paper venue dibaca), batas tipe artikel dan abstrak (Guide for Authors), pernyataan wajib (CRediT,
+konflik kepentingan, pendanaan, ketersediaan data, deklarasi AI generatif), judul dan kebaruan,
+konsistensi internal lintas berkas, serta kepatuhan templat elsarticle.
+
+**Tiga gerbang yang ternyata belum pernah diperiksa sistematis, dan hasilnya:**
+
+| Pemeriksaan | Hasil | Ambang |
+|---|---|---|
+| Kemutakhiran pustaka | 46 dari 47 terbit 2021 ke atas (**98%**) | mayoritas 5 tahun terakhir |
+| Rasio sitasi diri | **0 dari 47 (0%)** | di bawah 20% |
+| Status retraksi | **nol bermasalah**: 29 DOI penerbit dicek ke CrossRef (`update-to`, `relation`, tipe, judul), 16 DOI arXiv dicek ke DataCite | biner-kritis |
+
+Dua rujukan tanpa DOI diperiksa terpisah karena gerbang T2 menandai rujukan tak terverifikasi sebagai
+biner-kritis. Keduanya sah: **SharmaKaplan2022** terbit di JMLR dan **YangJoules2025** di PMLR, dua
+venue yang memang tidak menerbitkan DOI. URL keduanya hidup (HTTP 200) dan metadata PMLR dicocokkan
+langsung ke halaman resminya: judul, penulis, volume 267, halaman 70498-70514, semuanya cocok.
+
+Diperiksa pula bahwa **DiGirolamo2022**, paper tertarik yang ditemukan pada fase sebelumnya, memang
+sudah tidak disitasi naskah; ia hanya tersisa sebagai entri yatim di `.bib`.
+
+**Kesenjangan yang tersisa dan tidak dapat ditutup di sini:** gerbang T2b (kesetiaan klaim terhadap
+sumber) menuntut teks lengkap tiap rujukan. Kita hanya memiliki 12 PDF paper venue di `../uploads`,
+sehingga pemeriksaan menyeluruh atas 47 rujukan belum mungkin. Dua salah kutip yang pernah ditemukan
+(Yao2025 dan DiGirolamo2022) tertangkap secara kebetulan, bukan lewat sapuan sistematis.
+
+---
+
+## Fase BD: audit kesetiaan klaim (gerbang T2b) — satu salah kutip ditemukan
+
+Menutup kesenjangan yang ditandai fase BC. Dari 47 rujukan, diidentifikasi **24 yang menopang argumen**
+(kalimatnya memuat angka, klaim pembanding, atau penanda klaim), lalu klaim yang kita atributkan
+dicocokkan ke sumbernya. Enam belas berhasil diverifikasi; sisanya rujukan latar yang tidak menopang
+klaim spesifik.
+
+**Terverifikasi cocok (16):**
+
+| Rujukan | Klaim kita | Bukti di sumber |
+|---|---|---|
+| He2026 | tuas power cap dan batch size | "jointly optimizes GPU power capping and workload batch size" |
+| Yao2025 | prioritas pekerjaan | "adjusting power limits based on job priority" |
+| Castano2026 | pemilihan perangkat keras | judul: optimisasi konfigurasi perangkat keras inferensi |
+| Guo2025 | penaksir terlatih memprediksi energi tanpa menjalankan | SDEnergy, menghindari "resource-intensive inference" |
+| Spillo2026 | algoritma sederhana lebih efisien | "results consistently favored simpler alternatives", beda 50x |
+| Desislavov2023 | energi tumbuh jauh lebih lunak | "much softer growth in energy consumption than previously anticipated" |
+| JolicoeurMartineau2025 | TRM 7M parameter | "With only 7M parameters, TRM obtains 45% on ARC-AGI-1" |
+| Saunshi2025 | kedalaman menggantikan parameter | "require a large depth but not necessarily many parameters" |
+| Geiping2025 | kedalaman saat inferensi | "unrolling to arbitrary depth at test-time" |
+| Csordas2024 | rekurensi pada kedalaman | Universal Transformers, "recurrence in depth" |
+| Tschand2025 | efisiensi energi jadi perhatian utama | "Benchmarking the energy efficiency ... is crucial" |
+| YangLooped2024, Li2025, Choshen2024, Caballero2023, OliveiraFilho2025 | sesuai judul dan abstrak masing-masing | |
+
+**SALAH KUTIP DITEMUKAN: Huynh2026.** Naskah menyatakan di bagian Related Work bahwa "optimised large
+models emit less CO2 than small baselines". Diperiksa ke tabel hasil paper aslinya, klaim itu **tidak
+benar dan arahnya justru terbalik**:
+
+- BERT + Adapter Modules (besar, dioptimalkan): **0,3984 kWh**
+- ELECTRA-small (kecil, tanpa optimasi): **0,1065 kWh**
+
+Model besar yang sudah dioptimalkan justru **3,7 kali lebih boros** daripada baseline kecil. Klaim itu
+muncul di **tiga tempat** (Pendahuluan, Related Work, Diskusi) dan ketiganya dikoreksi ke temuan yang
+benar-benar dilaporkan paper tersebut: adapter modules memangkas energi BERT **27,3%** sambil
+**menaikkan** akurasinya ke **0,9305**, yakni penghematan tanpa mengorbankan akurasi.
+
+Argumen kita tidak melemah karena koreksi ini, justru menjadi lebih tepat: yang ditunjukkan kedua
+tolok ukur venue bukan "alokasi intuitif selalu salah", melainkan bahwa **pertukaran yang diduga antara
+biaya dan mutu tidak terjadi** pada keduanya. Itu bentuk yang sama dengan temuan kita di sumbu rekursi.
+
+**Catatan metode.** Pencocokan DOI awal meleset untuk dua paper (Desislavov2023 dan Yao2025 sebenarnya
+ada di `../uploads` tetapi tak terdeteksi), sehingga sempat dikira tak punya teks lengkap. Ditemukan
+lewat penyapuan ulang berdasarkan DOI di halaman pertama tiap PDF.
+
+Naskah tetap 40 halaman, 0 rujukan menggantung.
