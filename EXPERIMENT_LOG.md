@@ -2265,3 +2265,119 @@ ada di `../uploads` tetapi tak terdeteksi), sehingga sempat dikira tak punya tek
 lewat penyapuan ulang berdasarkan DOI di halaman pertama tiap PDF.
 
 Naskah tetap 40 halaman, 0 rujukan menggantung.
+
+**Sinkronisasi kanal setelah fase BD.** Diperiksa apakah paket Zenodo dan cermin kode ctrm perlu
+disegarkan setelah koreksi Huynh2026.
+
+*Zenodo v3: masih mutakhir, tidak perlu versi baru.* Diperiksa lewat riwayat git: **nol perubahan pada
+`zenodo/` sejak commit publikasi v3** (67cc980). Koreksi Huynh2026 hanya menyentuh `manuscript/main.tex`,
+sedangkan naskah memang tidak ikut ke dalam paket. Perlu dicatat satu jebakan: md5 tarball berbeda tiap
+kali dibangun ulang meski isinya identik, karena gzip menyimpan stempel waktu. Diuji dengan membangun
+dua kali berturut-turut dan hasilnya memang berbeda, sehingga **md5 tarball tidak sah dipakai
+membandingkan isi**; riwayat git yang dipakai sebagai penentu.
+
+*ctrm: tertinggal lima fase.* Jurnal eksperimen di sana berhenti di fase AY (2013 baris) sedangkan repo
+sudah di BD (2267 baris). Disegarkan. Kode dan data diperiksa lebih dulu dan ternyata sudah identik;
+satu-satunya beda lain adalah berkas log mentah dan README, keduanya memang sengaja berbeda mengikuti
+pembagian kanal fase AZ. Commit ctrm `b10f477`.
+
+---
+
+## Fase BE: pemeriksaan visual figur, tiga cacat ditemukan
+
+Kesembilan figur dirender pada 150 dpi dan diperiksa satu per satu, bukan sekadar dicek keberadaannya.
+
+**1. Tumpang tindih pada Figur 4 (frontier energi-akurasi).** Kurva D18 melintasi tepat di atas teks
+label "268 Wh (3/3)" sehingga angkanya sulit dibaca, dan label "329 Wh (2/3)" nyaris menempel padanya.
+Diperbaiki: posisi label digeser per kedalaman (D9 ke kiri-bawah, sisanya kanan-bawah) dan diberi latar
+putih semi-transparan agar tak tertembus kurva.
+
+**2. DUPLIKASI: panel kiri Figur 6 memplot data yang sama persis dengan panel pertama Figur 7.** Keduanya
+menampilkan akurasi exact Sudoku terhadap D_eff dengan nilai 62,4 / 50,1 / 36,3 dan bentuk plot yang
+sama. Penelaah wajar bertanya mengapa satu hal digambar dua kali. Panel itu dibuang dari Figur 6, yang
+kini menyisakan satu panel yang memang tidak ada duanya, yaitu akurasi akhir terhadap energi neto yang
+benar-benar terpakai. Caption diperbarui dan menunjuk pembaca ke Figur 7 untuk sumbu kedalaman, serta
+memuat angka baru yang diverifikasi: D9 menghabiskan 402 Wh melawan 340 Wh milik D36, yakni hanya
+**18% lebih mahal** sambil paling akurat.
+
+**3. Label terpotong dan legenda menutupi data.** Label `$D_9$` pada panel energi terpotong tepi kanan;
+diperbaiki dengan offset per titik dan pelebaran batas sumbu. Pada bidang rancangan, legenda menimpa
+titik D_eff=36 lalu, setelah dipindah ke kanan-bawah, menimpa penanda baseline; akhirnya ditempatkan di
+pita kosong tengah-kanan dan diverifikasi bersih dari seluruh titik.
+
+**Temuan sampingan yang lebih penting daripada ketiganya: tiga figur tidak punya skrip generator.**
+`fig_sudoku_frontier`, `fig_width_optimum`, dan `fig_design_plane` dibuat secara ad hoc pada fase awal
+dan tak pernah diikat ke kode, sehingga melanggar aturan integritas #1 dan tak bisa diregenerasi bila
+data berubah. Ketiganya kini punya generator di `make_manuscript_figures.py`, membaca langsung dari
+`recipe_summary.csv`. Bidang rancangan sekaligus diperbaiki isinya: sapuan kedalaman h=256 untuk Maze
+dan ARC dulu hanya disebut sebagai teks, kini digambar sebagai titik pudar sehingga bidangnya utuh.
+
+Naskah tetap 40 halaman, 0 undefined.
+
+---
+
+## Fase BF: pemeriksaan visual tabel — satu kebocoran serius ditemukan
+
+Kesembilan tabel dirender dan diperiksa. Tabelnya sendiri rapi, tidak ada yang terpotong. Tetapi
+pemeriksaan itu menyingkap cacat yang jauh lebih penting daripada tata letak.
+
+**KEBOCORAN: catatan audit internal tercetak di daftar pustaka.** Field `note` pada 73 entri `.bib`
+memuat anotasi kerja kami sendiri, dan `elsarticle-num` mencetaknya. Di PDF muncul **27 kali** dalam
+bentuk seperti:
+
+> Scopus EID 2-s2.0-105035350995; type journal-article; pillar P6; verified CrossRef sim=1.00
+
+Ini akan terkirim ke penyunting apa adanya. Diperiksa lebih dulu apakah ada informasi sah yang hanya
+tersimpan di sana: tidak ada satu pun entri yang venue-nya bergantung pada `note`, dan sebelas di
+antaranya malah rusak (terpotong di `{DOI`). Seluruh 73 field `note` dibuang; 47 sitasi tetap utuh,
+naskah menyusut 40 -> 39 halaman.
+
+**Cacat format berikutnya, dan sebabnya bukan gaya melainkan metadata.** Dua belas rujukan tercetak
+sebagai `1201--1216doi:10.1109/...`, halaman menempel DOI tanpa pemisah. Ditelusuri: `elsarticle-num`
+menghilangkan titik pemisah bila `volume` kosong. Diperiksa ke CrossRef, ternyata **sebelas di antaranya
+paper konferensi yang salah ditandai `@article`** (HPCA, CCGrid, SC24, NeurIPS, ICPADS, dan lain-lain),
+satu bab buku, dan satu artikel akses-awal. Jadi ini bukan sekadar cacat kosmetik melainkan **jenis
+entri yang keliru**. Diperbaiki: 11 menjadi `@inproceedings` dengan `booktitle`, satu menjadi
+`@incollection`, dan pada Tschand2026 paginasi sementara `1--9` dibuang karena artikel akses-awal
+memang belum berpaginasi tetap. Sisa kasus: nol.
+
+**Cacat pada figur yang ikut tertangkap.** Caption bidang rancangan menyebut penanda baseline sebagai
+"star" padahal yang digambar segitiga; dikoreksi. Legenda pada figur yang sama bertabrakan berturut-turut
+dengan titik D=36, penanda baseline, lalu titik D=9, dan baru bersih setelah ditempatkan di luar jalur
+data. Pada diagram protokol, kotak paling kiri dan paling kanan **terpotong tepi gambar** karena batas
+sumbu dipasang persis di tepi kotak; diberi margin, kotak dilebarkan, font 7,3 -> 6,3, dan keenam panah
+dihitung ulang dari tepi kotak yang baru.
+
+**Cacat tipografi.** Kolom paragraf Tabel 2 rata kanan-kiri sehingga muncul celah menganga di baris
+"Width axis"; diubah menjadi rata kiri lewat `>{\raggedright\arraybackslash}`.
+
+Hasil akhir: 39 halaman, 0 undefined, 0 bocoran internal, 0 halaman menempel DOI, 47 sitasi utuh.
+
+---
+
+## Fase BG: Zenodo v4 diterbitkan
+
+Diperiksa lebih dulu apakah versi baru memang beralasan. Riwayat git menunjukkan tiga berkas berubah
+di `zenodo/` sejak commit publikasi v3 (67cc980), dan ketiganya substantif, bukan kosmetik:
+
+| Berkas | Perubahan |
+|---|---|
+| `README.md` | "37 runs" -> 49; Maze dan ARC "3 seeds" -> 5 |
+| `PROTOCOL.md` | Maze dan ARC "3 seeds" -> 5 |
+| `code/make_manuscript_figures.py` | tiga generator figur baru (`fig_sudoku_frontier`, `fig_width_optimum`, `fig_design_plane`) yang sebelumnya tak ada, plus perbaikan tumpang tindih |
+
+Dua yang pertama adalah **koreksi fakta**: paket v3 menyatakan jumlah run dan jumlah seed yang salah.
+Yang ketiga menutup celah reproducibility, karena tiga figur naskah dulu dibuat ad hoc tanpa kode.
+
+**Prosedur.** Versi baru dibuat lewat `POST .../actions/newversion`, menghasilkan draft id 22182985 yang
+mewarisi keempat berkas v3. `THIRD_PARTY_LICENSES.md` tidak berubah sehingga dibiarkan; tiga sisanya
+dihapus lalu diunggah ulang. Sebelum menerbitkan, keempat berkas dicocokkan md5 terhadap salinan lokal
+dan semuanya identik. Deskripsi metadata diperiksa dan sudah benar sejak v3 (memuat 49 faithful, 91 run,
+16,1 kWh, dan rumusan ARC lima seed), sehingga tidak perlu disunting.
+
+**Hasil.** HTTP 202, state `done`.
+- DOI versi v4: **10.5281/zenodo.22182985**
+- Concept DOI: **10.5281/zenodo.21181342** (dirujuk naskah, tidak berubah)
+- Diverifikasi: concept DOI kini me-resolve ke `zenodo.org/records/22182985`, yakni v4.
+
+Tarball 115.557.173 byte, md5 `7266f8c3ee119b0f5434aec1749b2e29`.

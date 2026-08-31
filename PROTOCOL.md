@@ -90,8 +90,8 @@ Data:
 - `data/microbench_results.csv` — measured calibration data (RTX 5060 Ti).
 - `data/recipe_out/` — real-accuracy Sudoku-Extreme (depth axis h512 3 seeds; width axis h256/h512/h768).
   `recipe_summary.csv` + per-run `progress_/pw_/emissions_`.
-- `data/maze_depth_out/` — real-accuracy Maze-Hard depth grid (D9/D18/D36 @ h256, 3 seeds).
-- `data/arc_depth_out/` — real-accuracy ARC-AGI-1 depth grid (D9/D18/D36 @ h256, 3 seeds). Built from
+- `data/maze_depth_out/` — real-accuracy Maze-Hard depth grid (D9/D18/D36 @ h256, 5 seeds).
+- `data/arc_depth_out/` — real-accuracy ARC-AGI-1 depth grid (D9/D18/D36 @ h256, 5 seeds). Built from
   ARC-AGI-1 training+evaluation (no ConceptARC), 1000x augmentation, test truncated to 512; `GROUPS=3080`
   (= 800 groups x mean_puzzle_examples 3.85) so labelled steps equal actual optimizer steps.
 - `data/maze_real_out/` — Maze faithful-recipe probe.
