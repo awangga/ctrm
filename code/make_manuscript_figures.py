@@ -27,7 +27,8 @@ GRID = 0.67593         # kg CO2e/kWh, dari CodeCarbon (Indonesia), konstan di se
 
 # Okabe-Ito
 OI = {"blue": "#0072B2", "orange": "#E69F00", "vermillion": "#D55E00",
-      "green": "#009E73", "sky": "#56B4E9", "grey": "#555555"}
+      "green": "#009E73", "sky": "#56B4E9", "grey": "#555555",
+      "reddish": "#CC79A7"}
 
 plt.rcParams.update({
     "font.family": "serif", "font.serif": ["DejaVu Serif"], "font.size": 9,
@@ -135,8 +136,13 @@ def fig_energy_accuracy(out_path, data_root):
             mx = float(np.mean(reach))
             ax.plot(mx, TARGET, marker="*", markersize=11, color=colour,
                     markeredgecolor="white", markeredgewidth=0.6, zorder=4)
+            # Label ditaruh di bawah sumbu target dan digeser per kedalaman supaya tidak
+            # ditembus kurva tetangga; sebelumnya kurva D18 melintasi teks label D9.
+            dy = {9: -30, 18: -18, 36: -18}.get(depth, -18)
+            dx = {9: -46, 18: 6, 36: 6}.get(depth, 6)
             ax.annotate(f"{mx:.0f} Wh ({len(reach)}/{len(curves)})", (mx, TARGET),
-                        textcoords="offset points", xytext=(4, -12), fontsize=7.5, color=colour)
+                        textcoords="offset points", xytext=(dx, dy), fontsize=7.5, color=colour,
+                        bbox=dict(boxstyle="round,pad=0.16", fc="white", ec="none", alpha=0.85))
     ax.axhline(TARGET, color=OI["grey"], ls=":", lw=0.9, zorder=0)
     ax.annotate("target 50% exact", (ax.get_xlim()[1], TARGET), textcoords="offset points",
                 xytext=(-4, 4), ha="right", fontsize=7.5, color=OI["grey"])
@@ -628,11 +634,12 @@ def fig_protocol(out_path):
     """
     from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
     fig, ax = plt.subplots(figsize=(6.6, 2.9))
-    ax.set_xlim(0, 100)
-    ax.set_ylim(0, 46)
+    # Beri margin: tanpa ini kotak paling kiri dan paling kanan terpotong tepi gambar.
+    ax.set_xlim(-4, 108)
+    ax.set_ylim(-2, 47)
     ax.axis("off")
 
-    def box(x, y, w, h, lines, fc="white", ec="0.35", fs=7.3, mono=False):
+    def box(x, y, w, h, lines, fc="white", ec="0.35", fs=6.3, mono=False):
         ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.6,rounding_size=1.2",
                                     fc=fc, ec=ec, lw=0.9, zorder=2))
         ax.text(x + w / 2, y + h / 2, "\n".join(lines), ha="center", va="center",
@@ -643,28 +650,110 @@ def fig_protocol(out_path):
         ax.add_patch(FancyArrowPatch((x1, y1), (x2, y2), arrowstyle="-|>", mutation_scale=9,
                                      color=color, lw=0.9, ls=ls, shrinkA=1, shrinkB=1, zorder=1))
 
-    box(0, 19, 19, 12, ["Task and", "iso-compute budget",
+    box(0, 19, 21, 12, ["Task and", "iso-compute budget",
                         r"$P \times D_\mathrm{eff} \times$ steps", "held fixed"])
-    box(23.5, 19, 19, 12, ["Train, one GPU", "fixed thermal env.", "eval schedule pinned",
+    box(24.5, 19, 22, 12, ["Train, one GPU", "fixed thermal env.", "eval schedule pinned",
                            "to a 512-puzzle subset"])
-    box(47, 33, 15, 10, ["nvidia-smi", "power.draw, 1 Hz"], fc="#EAF2FA")
-    box(47, 5, 15, 10, ["CodeCarbon", "NVML energy"], fc="#EAF2FA")
-    box(65.5, 19, 19, 12, ["idle subtraction", "4.7 W constant", "cross-validate:",
+    box(50, 33, 15, 10, ["nvidia-smi", "power.draw, 1 Hz"], fc="#EAF2FA")
+    box(50, 5, 15, 10, ["CodeCarbon", "NVML energy"], fc="#EAF2FA")
+    box(68.5, 19, 20, 12, ["idle subtraction", "4.7 W constant", "cross-validate:",
                            r"agreement $\geq$ 98.8%"])
-    box(88.5, 19, 11.5, 12, ["Joules to", "target", "accuracy"], fc="#FDF0E3")
+    box(91.5, 19, 12.5, 12, ["Joules to", "target", "accuracy"], fc="#FDF0E3")
 
-    arrow(19.7, 25, 22.8, 25)
-    arrow(43.2, 27.5, 46.3, 34)
-    arrow(43.2, 22.5, 46.3, 13)
-    arrow(62.7, 34, 64.8, 27.5)
-    arrow(62.7, 13, 64.8, 22.5)
-    arrow(85.2, 25, 87.8, 25)
+    arrow(21.3, 25, 24.2, 25)
+    arrow(46.8, 27.6, 49.7, 35.0)
+    arrow(46.8, 22.4, 49.7, 13.0)
+    arrow(65.3, 36.0, 68.2, 27.6)
+    arrow(65.3, 12.0, 68.2, 22.4)
+    arrow(88.8, 25, 91.2, 25)
 
-    arrow(75, 18.3, 75, 3.6, color=OI["vermillion"], ls=(0, (2.5, 1.6)))
+    arrow(78, 18.3, 78, 3.6, color=OI["vermillion"], ls=(0, (2.5, 1.6)))
     ax.text(50, 1.2, "rejected: instruments disagree, or wall time < 120 s (aborted / OOM)",
             ha="center", va="bottom", fontsize=7.6, color=OI["vermillion"], style="italic")
     fig.savefig(out_path)
     plt.close(fig)
+    print(f"  tulis {out_path}")
+
+
+def fig_sudoku_frontier(out_path, data_root):
+    """Akurasi akhir Sudoku terhadap energi neto. SATU panel.
+
+    Panel "akurasi vs kedalaman" yang dulu ada di sini dibuang karena menduplikasi
+    panel pertama fig_crosstask_depth: data dan bentuk plotnya sama persis.
+    """
+    rec = os.path.join(data_root, "recipe_out")
+    pts = []
+    for depth, batch in ((9, "b192"), (18, "b192"), (36, "b96")):
+        acc, wh = [], []
+        for r in csv.DictReader(open(os.path.join(rec, "recipe_summary.csv"))):
+            if r["hidden"] == "512" and r["D_eff"] == str(depth) and "recipe" in r["tag"]:
+                acc.append(float(r["best_exact_pct"])); wh.append(float(r["smi_net_Wh"]))
+        pts.append((depth, float(np.mean(wh)), float(np.mean(acc))))
+    fig, ax = plt.subplots(figsize=(3.4, 2.6))
+    xs = [p[1] for p in pts]; ys = [p[2] for p in pts]
+    ax.plot(xs, ys, "-", color="0.25", lw=1.4, zorder=1)
+    for d, x, y in pts:
+        ax.plot(x, y, "s", ms=6, mfc="white", mec="0.15", mew=1.2, zorder=3)
+        off = (-30, -14) if d == 9 else (8, -4)
+        ax.annotate(rf"$D_{{{d}}}$", (x, y), textcoords="offset points", xytext=off, fontsize=8.5)
+    ax.set_xlabel("Net training energy (Wh)")
+    ax.set_ylabel("Exact accuracy (%)")
+    ax.set_xlim(min(xs) - 12, max(xs) + 12)
+    ax.set_ylim(min(ys) - 4, max(ys) + 5)
+    ax.grid(alpha=0.25, lw=0.5)
+    fig.savefig(out_path); plt.close(fig)
+    print(f"  tulis {out_path}")
+
+
+def fig_width_optimum(out_path, data_root):
+    """Sumbu lebar pada D_eff=18: optimum di tengah pada h=512."""
+    rec = os.path.join(data_root, "recipe_out", "recipe_summary.csv")
+    g = {}
+    for r in csv.DictReader(open(rec)):
+        if r["D_eff"] == "18" and "recipe" in r["tag"]:
+            g.setdefault(int(r["hidden"]), []).append(float(r["best_exact_pct"]))
+    hs = sorted(g)
+    m = [float(np.mean(g[h])) for h in hs]
+    sd = [float(np.std(g[h], ddof=1)) for h in hs]
+    fig, ax = plt.subplots(figsize=(2.9, 2.6))
+    ax.errorbar(range(len(hs)), m, yerr=sd, fmt="D-", ms=5.5, mfc="white",
+                color=OI["reddish"], ecolor=OI["reddish"], capsize=3, lw=1.3, mew=1.2)
+    ax.set_xticks(range(len(hs))); ax.set_xticklabels([str(h) for h in hs])
+    ax.set_xlabel("hidden size $h$")
+    ax.set_ylabel("Exact accuracy (%)")
+    ax.set_xlim(-0.35, len(hs) - 0.65)
+    ax.grid(alpha=0.25, lw=0.5)
+    fig.savefig(out_path); plt.close(fig)
+    print(f"  tulis {out_path}")
+
+
+def fig_design_plane(out_path, data_root):
+    """Bidang rancangan (P, D_eff): titik yang benar-benar dijalankan."""
+    fig, ax = plt.subplots(figsize=(3.9, 3.0))
+    ax.plot([512, 512, 512], [9, 18, 36], "-", color="0.6", lw=0.9, zorder=1)
+    ax.plot([256, 512, 768], [18, 18, 18], "-", color="0.6", lw=0.9, zorder=1)
+    ax.plot([512] * 3, [9, 18, 36], "o", ms=8, mfc="none", mec=OI["blue"], mew=1.6,
+            label=r"depth sweep ($h{=}512$)", zorder=3)
+    ax.plot([256, 512, 768], [18] * 3, "s", ms=8, mfc="none", mec=OI["reddish"], mew=1.6,
+            label=r"width sweep ($D_{\mathrm{eff}}{=}18$)", zorder=3)
+    ax.plot([512], [1], "^", ms=9, mfc="none", mec="0.15", mew=1.6,
+            label="non-recursive baseline", zorder=3)
+    ax.plot([256], [9], "o", ms=8, mfc="none", mec=OI["blue"], mew=1.6, alpha=0.45, zorder=2)
+    ax.plot([256], [36], "o", ms=8, mfc="none", mec=OI["blue"], mew=1.6, alpha=0.45, zorder=2)
+    ax.plot([256, 256, 256], [9, 18, 36], "-", color="0.75", lw=0.9, ls=(0, (3, 2)), zorder=1)
+    ax.text(600, 1.15, "faded: Maze and ARC\ndepth sweep ($h{=}256$)", fontsize=7.2, color="0.45")
+    ax.set_yscale("log"); ax.set_yticks([1, 9, 18, 36])
+    ax.set_yticklabels(["1", "9", "18", "36"])
+    ax.set_xticks([256, 512, 768])
+    ax.set_xlabel(r"hidden size $h$   ($P \propto h^2$)")
+    ax.set_ylabel(r"recursion depth $D_{\mathrm{eff}}$")
+    ax.set_xlim(175, 880); ax.set_ylim(0.62, 62)
+    ax.grid(alpha=0.25, lw=0.5)
+    # Legenda ditaruh di luar kanan-atas area data: di dalam plot ia selalu
+    # bertabrakan, entah dgn titik D=36, penanda baseline, atau titik D=9.
+    ax.legend(frameon=False, fontsize=7.2, loc="upper left", bbox_to_anchor=(0.015, 0.46),
+              handletextpad=0.4, borderpad=0.2, labelspacing=0.35)
+    fig.savefig(out_path); plt.close(fig)
     print(f"  tulis {out_path}")
 
 
@@ -682,6 +771,9 @@ def main():
     fig_iso_accuracy(os.path.join(out, "fig_iso_accuracy.pdf"), root)
     fig_regime_map(os.path.join(out, "fig_regime_map.pdf"), root)
     fig_protocol(os.path.join(out, "fig_protocol.pdf"))
+    fig_sudoku_frontier(os.path.join(out, "fig_sudoku_frontier.pdf"), root)
+    fig_width_optimum(os.path.join(out, "fig_width_optimum.pdf"), root)
+    fig_design_plane(os.path.join(out, "fig_design_plane.pdf"), root)
     mb = os.path.join(root, "microbench_results.csv")
     if not os.path.exists(mb):
         mb_alt = os.path.join(root, "..", "kalibrasi", "microbench_results.csv")

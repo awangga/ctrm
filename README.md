@@ -7,9 +7,8 @@ The package maps the **energy–accuracy frontier of recursion depth versus para
 Recursive Models on symbolic reasoning, under a fixed compute/energy budget, using
 **Joules-to-target-accuracy** as the primary metric on a single consumer GPU (NVIDIA RTX 5060 Ti,
 16 GB). Framing is Green AI (efficiency frontier and cross-task regime map), not a forecasting scaling
-law. Every empirical number in the manuscript traces to a run artifact (per-step learning
-curves, 1 Hz power series, CodeCarbon emissions) archived on Zenodo; the compact subset is in `data/`
-here.
+law. Every empirical number in the manuscript traces to a run artifact in `data/` (per-step learning
+curves, 1 Hz power series, CodeCarbon emissions).
 
 **Scale of the study.** 91 runs carry a per-run energy record, totalling **18.6 kWh** of measured GPU
 energy. The **49 faithful-recipe runs** that produce every reported result account for **16.1 kWh**; the
@@ -25,17 +24,16 @@ driver stack (the last six runs, executed after a driver upgrade on the same car
 reported number, fall as low as 95.9%. Per-run agreement for both regimes is in the reconciliation table.
 
 
-> **Where the data lives.** This repository carries the code, protocol, and the compact run artifacts
-> (summary CSVs, 1 Hz power series, CodeCarbon emissions, consolidated ablation reports). The
-> **complete archive**, including the per-step learning curves (`progress_*.jsonl`, 649 MB) and raw
-> training logs, is deposited on Zenodo under the concept DOI
-> **[10.5281/zenodo.21181342](https://doi.org/10.5281/zenodo.21181342)**, which always resolves to the
-> latest version. Cite the Zenodo DOI, not this repository, when referring to the data.
+> **Where the data lives.** This repository carries the code, protocol, and the compact run artifacts.
+> The **complete archive**, including the per-step learning curves (`progress_*.jsonl`) and raw training
+> logs, is deposited on Zenodo under the concept DOI
+> **[10.5281/zenodo.21181342](https://doi.org/10.5281/zenodo.21181342)**. Cite the Zenodo DOI, not this
+> repository, when referring to the data.
 
 ## Contents
 ```
-LICENSE                 MIT (our code); third-party works keep their own
-EXPERIMENT_LOG.md       append-only chronological journal of every phase
+.zenodo.json        Zenodo deposition metadata
+LICENSE                 MIT (our code)
 THIRD_PARTY_LICENSES.md Licences of the vendored third-party works
 requirements.txt        Python dependencies (torch cu128 for Blackwell GPUs)
 PROTOCOL.md             Full experimental + energy-measurement protocol
