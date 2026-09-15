@@ -2381,3 +2381,207 @@ dan semuanya identik. Deskripsi metadata diperiksa dan sudah benar sejak v3 (mem
 - Diverifikasi: concept DOI kini me-resolve ke `zenodo.org/records/22182985`, yakni v4.
 
 Tarball 115.557.173 byte, md5 `7266f8c3ee119b0f5434aec1749b2e29`.
+
+---
+
+## Fase BH: audit kelayakan submit menyeluruh + copy-edit per section (2026-09-15)
+
+**Tujuan.** Menjawab "sudah layak submit?" dengan bukti, bukan kesan: kompilasi, sitasi, angka vs artefak,
+konsistensi internal, figur/tabel, paket Zenodo, posisi terhadap paper SUSCOM, lalu perbaikan bahasa.
+
+**Yang lolos tanpa perubahan.** 47 sitasi semuanya ada di `references.bib` (27 entri bib tak dikutip,
+dibiarkan). Zenodo concept DOI resolve ke v4 (`records/22182985`), cermin `awangga/ctrm` publik.
+Skrip figur `zenodo/code/make_manuscript_figures.py` byte-identik dengan versi `eksperimen/`. Semua
+angka Maze n=5 (83,17/83,58/84,91; energi 314/303/324 Wh = +3,0%), ARC n=5, Sudoku, headroom (38/69/15),
+CO2e (675,9 g/kWh), pilot (6,2/9,4/8,8), overhead evaluasi (1,50/2,99/5,78), konvergensi (+3,1/+1,2/+1,4)
+cocok dengan CSV/report. Highlights 5 butir, semua <=85 karakter. Sepuluh figur diperiksa visual: layak.
+
+**Cacat yang ditemukan dan diperbaiki di `main.tex`:**
+1. Dua error LaTeX `Missing $ inserted` (Tabel A.1, `5.6\times 10^{-5}` di luar mode math); PDF
+   sebelumnya "kebetulan" jadi. Lima em-dash Unicode di subjudul Tabel A.1 diganti titik dua.
+2. **Kalimat basi pasca-Maze n=5** yang saling bertentangan dengan abstrak: Discussion masih menulis
+   "neutral within noise (Maze, ARC)", "no task shows a benefit from added depth", "null results on
+   Maze and ARC"; Related Work "on these tasks the shallowest setting is already past it". Semua ditulis
+   ulang mengikuti verdict Maze deep-wins / ARC unresolved.
+3. "three seeds" dinyatakan sebagai aturan umum di Methods, Design, Results, caption Fig. 3, Discussion,
+   padahal Maze/ARC lima seed. Diperbaiki di semua tempat.
+4. **Kalimat driver basi**: "the last six runs ... 98,82-98,88% vs 99,36-99,95%". Faktanya 12 run
+   (Maze s3-4 DAN ARC s3-4) pasca-upgrade driver: 98,82-98,93% vs 37 run sebelumnya 99,11-99,95%.
+   Dikoreksi di naskah dan `zenodo/README.md` (lokal; rekaman Zenodo v4 masih memuat versi lama).
+5. Shim AdamW dan patch progress-logging dirujuk "described in Section 3" oleh Tabel 2 dan
+   Reproducibility, tetapi Section 3 tidak pernah menjelaskannya. Ditambahkan satu paragraf.
+6. Keyword 7 -> 6 (`compute-optimal` dibuang; batas umum Elsevier 6). Abstrak dijaga 246 kata.
+7. Caption Tabel 1 menyebut kolom "power" yang tidak ada; notasi 2.2 `$D$`/`$P$` -> `$D_eff$`/`$h$`;
+   "an 19%" -> "a 19%"; `artifact` -> `artefact` (British, konsisten dengan favour/organise).
+8. Caption Fig. 1: ditambah bahwa tiap run juga dicek manual (wall time + step count), karena aturan
+   <120 s terbukti tidak menangkap run terpotong 161 s (fase AW).
+9. Threats: satu kalimat bahwa satu kartu = satu titik hardware, dan runner dirancang agar grid Sudoku
+   bisa diulang di kartu kedua (antisipasi permintaan reviewer sistem).
+10. `.zenodo.json` lokal: catatan "published on acceptance" sudah tidak benar, dibuang.
+
+**Copy-edit per section (9 agen, satu berkas per section, digabung ulang).** Verifikasi otomatis
+(`numcheck.py`): himpunan angka, kunci `\cite`, `\ref`/`\label`, path figur identik sebelum/sesudah,
+kecuali koreksi faktual butir 4 dan 9 yang memang disengaja. Kompilasi 0 error, 40 halaman.
+Surat pengantar ditambah kalimat scope ("resource management to optimise performance and power") dan
+preseden Spillo/Huynh.
+
+**Posisi terhadap SUSCOM (riset agen, DOI terverifikasi via CrossRef/OpenAlex).** Dari 447 artikel
+2024-2026 hanya ~12 tentang energi model AI; studi single-GPU skala kecil memang terbit (Spillo 2026: satu
+Titan X; Huynh 2026: satu P100, 3 seed; Guo 2025: satu Jetson Nano). Protokol kita (dua instrumen,
+koreksi idle, Bonferroni, 3-5 seed) di atas norma venue. Risiko: dibaca sebagai "paper arsitektur ML"
+oleh editor arus utama "ML untuk energi"; panjang 40 hal preprint di atas median (~13 hal terset);
+permintaan validasi GPU kedua. Acceptance rate/waktu review tidak terverifikasi dari sumber mana pun.
+
+**Keputusan penulis yang tersisa (tidak diambil di sini):** (a) memindahkan Lampiran A/B ke
+supplementary untuk memangkas panjang; (b) menerbitkan Zenodo v5 agar README di rekaman memuat koreksi
+kalimat driver (concept DOI tetap); (c) konfirmasi peran CRediT.
+
+---
+
+## Fase BI: keputusan lampiran, audit akhir 13 agen, dan temuan aturan checkpoint (2026-09-15)
+
+**Lampiran A/B tetap di dalam artikel.** Varian supplementary dibangun (`supplementary.tex`, Tabel S1/S2,
+naskah 40 -> 38 halaman) dan disimpan di commit `2f0c4d6`, lalu dibatalkan. Bukti: Guide for Authors SUSCOM
+(PDF lokal 26/08/2026) mengizinkan appendix A, B dengan Table A.1 dan supplementary yang "will not be
+checked, formatted or typeset"; dari 12 paper SUSCOM di `uploads/`, satu memuat sembilan appendix di dalam
+artikel (Desislavov 2023, `10.1016/j.suscom.2023.100857`, 17 hlm) dan satu menulis "Supplementary material
+will be provided upon request" (Huynh 2026). Penghematan hanya 2 halaman; tabel uji hipotesis dan per-seed
+lebih aman di-typeset dalam PDF of record.
+
+**Audit akhir: 13 agen audit-only** (4 berkas repo: paket Zenodo, eksperimen/log, cover letter+bib, docs;
+9 section naskah), semua angka dihitung ulang dari CSV. Hasil: seluruh angka Tabel 3-7, A.1, B.1, Wh-to-50%,
+iso-akurasi, cost model, overhead evaluasi, konvergensi, pilot, agregat energi cocok. Cacat yang ditemukan
+dan DITUTUP (angka diverifikasi sendiri sebelum diterapkan):
+1. **Langkah terealisasi != nominal** (BLOCKER, terverifikasi dari `progress_*.jsonl`): runner membulatkan
+   epoch ke kelipatan 25 evaluasi; Maze 23.950/11.975/11.450, ARC 21.726/10.855/9.019 (nominal 24k/12k/12k);
+   produk compute sel D36 Maze -4,4%, ARC -17%. Sudoku utuh. Diungkap di caption Tabel 2 dan Threats;
+   arah biasnya melawan D36 di ARC (kasus unresolved), Maze D36 menang meski begitu.
+2. Klaim "A > 98,7% pada setiap run yang selesai; satu nilai di bawahnya 95,9%" salah: dua run 31 s
+   (95,89 dan 98,59) dan satu pilot selesai 224 s (98,68). Diperbaiki di Sec 2, caption Fig. 1, Threats;
+   label figur protokol diubah dari "agreement >= 98.8%" (aturan tolak) menjadi lantai teramati.
+3. Min daya sampler: 4,11 W hanya Sudoku; 4,04 W di seluruh log. Daya rata-rata run faithful 141,9-173,5 W
+   (naskah lama "80-170 W"). Diperbaiki.
+4. "43,8% pada step 25k" adalah interpolasi (checkpoint D9 tiap 2000 step): diganti 43,4% @24k; "leads until
+   32k" dirumuskan ulang. "no D9 seed exceeds 83.85" hanya benar untuk checkpoint akhir (lihat temuan terbuka).
+5. ARC "26-33% token" sisa n=3 -> 26-31%; "a hundred seeds" (d=0,40 lama) -> "a thousand" (d=0,15);
+   "identical on every run" untuk intensitas grid -> hanya 77 run ber-emissions; pilot hidden 128-384 -> 128-768;
+   R^2 ~0,6 -> 0,57; Maze "inside three points" -> two; kalimat basi "final accuracy" untuk iso-akurasi Sudoku
+   -> best-checkpoint; Tabel 2 baris data Maze/ARC (1000 maze x 8 dihedral; 800 task x 1000 aug; test 512),
+   baris Evaluators, baseline 12 heads + ACT loop + energy-matched; Algoritma 1 E(tau) post hoc.
+6. Discussion: "extra iterations buy no accuracy and sometimes remove it" dan "pattern holds ... ARC"
+   dilunakkan; "fitted to three points" -> dua titik mapan + satu unresolved; "at equal energy" -> matched compute.
+7. Intro: klaim prioritas "(or FLOPs)" dibuang dan dibingkai "we know of no study"; "every task we tried"
+   untuk sumbu lebar -> Sudoku saja; Bahri2024 dilepas dari klaim manipulation-vs-storage.
+8. Bib: 11 judul dengan akronim tak dikurung (MLPerf, AI, GPU, LLM, FLOPs, NOT) diperbaiki; tahun Jin2024/
+   Caballero2023 disamakan dengan venue; CRediT "review \& editing". Cover letter: "the result reversed" ->
+   "survived the corrected threshold"; tanggal; em-dash; artefact.
+9. Paket Zenodo: `rebuild_env.sh` tidak lagi hard-code path rumah; README/PROTOCOL memuat env ARCH, GROUPS,
+   TRM_DIR, perintah build Maze/ARC, konstanta idle 4,7 W, butir "planned, not applied" (clock lock,
+   train/inference terpisah); requirements + wandb; docstring shim AdamW; `.zenodo.json` "38 points of
+   headroom"; `watch_arcdepth_s34.sh` dibuang dari paket; DEPOSITION.md v3/v4 dicatat.
+10. Dokumen repo: CLAUDE.md 43 -> 49 run, idle 4-5 W; README dan eksperimen/README daftar `frontier/` nyata;
+    `revisi_E_metode_isoflop.md` diberi banner SUPERSEDED; skrip hook atribusi.
+
+Kompilasi 0 error, 41 halaman; `numcheck` vs sebelum audit: semua selisih angka = koreksi di atas.
+
+**TEMUAN TERBUKA (keputusan penulis, belum diterapkan): aturan checkpoint tidak seragam antar task.**
+Sudoku (Tabel 3, Algoritma 1: acc* = max_s) memakai checkpoint TERBAIK; Maze dan ARC memakai checkpoint
+AKHIR (`final_token_pct`). Dihitung ulang dari `progress_*.jsonl` (`all/accuracy`, 25 checkpoint):
+
+| task | aturan | D9 | D18 | D36 | D36 vs D9 | D36 vs D18 |
+|---|---|---|---|---|---|---|
+| Maze | akhir (naskah) | 83,17±0,53 | 83,58±0,51 | **84,91±0,58** | p=0,0011 | p=0,0049 |
+| Maze | terbaik | 86,66±0,18 | 86,76±0,09 | 86,54±0,29 | p=0,42 | p=0,16 |
+| ARC | akhir (naskah) | 31,20±3,28 | 30,68±3,61 | 25,80±0,59 | p=0,0200 (gagal Bonf.) | p=0,038 |
+| ARC | terbaik | **36,27±3,18** | 33,34±3,37 | 30,59±1,78 | **p=0,0122 (lolos Bonf.)** | p=0,16 |
+| Sudoku | akhir | 62,43 | 48,89±0,60 | 36,20±0,88 | semua p<0,001 | |
+
+Semua konfigurasi Maze memuncak 86,5-86,8% pada checkpoint ke-2 sampai ke-4 lalu TURUN; D36 turun paling
+sedikit. Jadi "deep wins" Maze = "deep degrades least after saturation", dan di bawah aturan terbaik Maze
+null. ARC di bawah aturan terbaik menjadi shallow-wins signifikan. Sudoku tidak berubah arah pada aturan
+mana pun. Dua opsi yang konsisten: (A) aturan TERBAIK untuk semua task, sesuai Algoritma 1: Sudoku shallow
+menang, ARC shallow menang (p=0,012), Maze null jenuh; "sign flip" hilang, cerita menjadi "depth tak pernah
+membayar; di metrik jenuh tak berpengaruh". (B) aturan AKHIR untuk semua task: cerita sekarang bertahan,
+Sudoku D18 50,1 -> 48,9, dan mekanisme Maze harus diungkap sebagai penurunan pasca-puncak. Keduanya wajib
+mengungkap dinamika puncak-lalu-turun. Zenodo v5 (draft `22765548`) DITAHAN sampai keputusan ini, karena
+README-nya memuat verdict Maze; unggahan tarball juga gagal dua kali (badan kosong, lalu 502) pada laju
+~55 KB/s.
+
+---
+
+## Fase BJ: aturan checkpoint terbaik diberlakukan ke semua task (opsi A) (2026-09-16)
+
+**Keputusan penulis:** opsi A dari fase BI, yakni satu aturan untuk semua task: akurasi sebuah konfigurasi
+= checkpoint evaluasi TERBAIK (Algoritma 1, `acc* = max_s acc(s)`), seperti yang sejak awal dipakai Sudoku.
+
+**Data.** `add_best_token.py` menurunkan kolom `best_token_pct` dari `progress_<tag>.jsonl` untuk 49 run
+faithful (kolom `final_token_pct` dipertahankan); `run_recipe.py` kini meng-emit kolom itu untuk run
+berikutnya. `stats_table.py`, `make_manuscript_figures.py` (fig_crosstask, fig_regime_map, perseed,
+ARC iso-akurasi baru) beralih ke `best_token_pct`. Skrip disalin ke `zenodo/code/`.
+
+**Hasil (n=5, checkpoint terbaik, dari `ablation/stats_table_contrasts.csv`):**
+| task | D9 | D18 | D36 | D9 vs D36 | ANOVA |
+|---|---|---|---|---|---|
+| ARC | **36,27±3,18** | 33,34±3,37 | 30,59±1,78 | t=3,48 p=0,0122 d=2,20 (lolos Bonf. 0,0167) | F(2,12)=4,90 p=0,028 |
+| Maze | 86,66±0,18 | 86,76±0,09 | 86,54±0,29 | p=0,42 | F(2,12)=1,59 p=0,24 |
+Kontras berdampingan ARC p=0,20 / 0,16. n=3 (seed 0-2): ARC p=0,14, Maze p=0,11, keduanya null.
+Energi: ARC D9 menyamai akurasi terbaik D36 (30,59%) pada 155±82 Wh (per seed 81/105/291/160/137) lawan
+278 Wh, hemat 44%; Maze D36 +3% energi (323,7 vs 314,4 Wh) tanpa selisih akurasi. Headroom: Sudoku 38,
+ARC 64, Maze 13. Sudoku tak berubah.
+
+**Naskah.** Cerita menjadi: efek kedalaman tidak pernah berbalik tanda; besarnya mengikuti sisa ruang metrik.
+Sudoku shallow menang 26 poin, ARC 5,7 poin (signifikan), Maze null jenuh (+3% energi tanpa hasil). Ditulis
+ulang: abstrak (249 kata), highlights (5 butir <=85 karakter; `highlights.txt`/`.docx` disinkronkan), Intro
+(paragraf kontribusi), Sec 2.4 (aturan checkpoint dinyatakan), Results 5.3 (termasuk pembacaan checkpoint
+akhir Maze 83,2/83,6/84,9 sebagai degradasi pasca-puncak, dilaporkan apa adanya), Tabel 4, Fig 7 caption,
+5.8 sintesis, Tabel 7 (ARC discriminating/shallow/56%; Maze saturated/none), Fig 9 caption, Related Work,
+Discussion, Practical guidance, Threats (paragraf daya statistik ditulis ulang + paragraf baru "checkpoint
+rule matters" yang mengakui draf sebelumnya memakai checkpoint akhir untuk Maze/ARC), Conclusion, Lampiran
+A (regenerasi dari `stats_table.tex`, subjudul memakai titik dua, bukan em-dash) dan B (nilai per-seed).
+Cover letter, `zenodo/README.md`, `.zenodo.json`, `PROTOCOL.md` diselaraskan; blok verdict lama di README
+yang sempat terduplikasi dihapus. Kompilasi 0 error, 41 halaman.
+
+**Audit visual figur/tabel (15 halaman dirender):** Fig 1-3, 5-9, Tabel 1-7, A.1, B.1 proporsional dan
+konsisten. Diperbaiki: anotasi "268 Wh (3/3)" di Fig 4 bertumpuk dengan kurva (offset digeser); caption
+Fig 6 masih "final" -> "best-checkpoint"; titik seed Fig 7 panel Maze terpotong tepi sumbu (margin y).
+
+**Zenodo v5** menyusul setelah commit ini: tarball dibangun ulang dari paket yang sudah memuat kolom
+`best_token_pct` dan README baru.
+
+---
+
+## Fase BK: audit ulang sembilan section pasca-opsi A, semua temuan terverifikasi diterapkan (2026-09-16)
+
+Sembilan agen audit-only (satu per section, brief: konsistensi vs artefak/Zenodo, penulisan, reproduksibilitas,
+kelayakan Q1) menghitung ulang setiap angka. Semua angka Tabel 3-7, A.1, B.1, iso-akurasi, cost model,
+overhead evaluasi, dan agregat energi cocok. Cacat yang ditemukan dan DITUTUP (commit 10c21a4):
+
+1. **Klaim graded "besaran efek mengikuti headroom" tidak ditopang data** (ARC headroom 64 -> efek 5,7;
+   Sudoku 38 -> 26). Abstrak, 5.8, Tabel 7 caption, Discussion, Conclusion dilunakkan ke bentuk ordinal:
+   efek shallow ADA di mana metrik masih punya ruang, HILANG di mana metrik jenuh; bentuk graded dinyatakan
+   belum teruji lintas metrik yang tak sepadan. Ditambah kalimat batas rezim (antara 13 dan 38 poin, belum
+   terlokalisasi oleh tiga task).
+2. **5.5 "shallow ahead at every point of the budget" salah terhadap baseline**: kurva rata-rata baseline
+   memimpin D9 sampai ~207 Wh. Dikoreksi (benar hanya terhadap D18/D36).
+3. **Dinamika puncak Maze per seed**: argmax D9 [2,2,2,2,2], D18 [4,4,4,4,11], D36 [4,14,12,21,12]; kalimat
+   "semua depth memuncak dalam 4 checkpoint pertama" hanya benar untuk kurva rata-rata. Ditulis ulang di
+   5.3, Threats, README Zenodo. ARC iso-akurasi 155±82 Wh dijelaskan per seed (4/5 di bawah 278 Wh, satu 291).
+4. **P ∝ h² tidak didukung** (slope log-log 1,49): Sec 2/3 diganti "P set by h alone", label sumbu Fig 3
+   dibuang. "49 run reported" -> "48 yang masuk hasil + 1 probe Maze". Pilot: hidden 128-768, best 0-18%.
+5. **Geiping2025 bukan model tiny** (3,5 miliar parameter): atribusi di Related Work dikoreksi. Bahri2024
+   dipindah ke 6.3. Huynh: trade-off muncul pada konfigurasi GA/Combined, hanya adapter yang cheaper+better.
+6. Tabel 2: `GROUPS=3080` untuk ARC (tanpa itu 71k step, bukan 21,7k), langkah terealisasi "seed 0";
+   Algoritma 1: E(tau) oleh `make_manuscript_figures.py` (joules_to_target.py hanya pilot; PROTOCOL diberi catatan).
+7. Discussion: "moderate width" hanya Sudoku; "always costing energy" hanya pada matched accuracy (iso-compute:
+   yang dalam justru lebih murah di Sudoku/ARC); pilot "worst of three" salah (pemenang pilot D18 = tengah,
+   memberi 12 poin lebih rendah). Threats: paragraf checkpoint rule dijujurkan (Algoritma 1 memang lebih
+   dulu, tetapi draf lama menyimpang untuk Maze/ARC); ARC 26-31% (sisa checkpoint akhir) -> 31-36%.
+8. Lampiran A: kontras D18-vs-baseline (p=0,82) yang dikutip 5.4 kini masuk `stats_table.py` (keluarga
+   baseline 3 kontras, alpha 0,0167; keduanya tetap lolos). Reproducibility menyebut `add_best_token.py`.
+9. Paket Zenodo: agreement per-run = kolom `gross_agree_pct` (tabel rekonsiliasi hanya rentang); OOM
+   h768xD36 dan `D_eff=8` baseline dicatat di Known limitations; cover letter "No study we know of".
+
+Naskah 42 halaman, 0 error, abstrak 250 kata, highlights <=84 karakter. Tarball v5 dibangun ulang dari
+paket final (md5 `2549fe2377b190239637f8c4c8ee3ef8`); README/PROTOCOL draft 22765548 diganti; unggahan
+tarball berjalan (dua percobaan sebelumnya gagal: badan kosong, lalu 502; laju ~55 KB/s). Cermin
+`awangga/ctrm` diselaraskan (kode, README, PROTOCOL, artefak ringkas dengan kolom `best_token_pct`).

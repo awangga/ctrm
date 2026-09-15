@@ -97,20 +97,21 @@ def main():
         try: pwf.close()
         except Exception: pass
     wall = time.time() - t0
-    best = 0.0; last = None
+    best = 0.0; best_tok = 0.0; last = None
     for ln in open(pj):
         if '"phase": "eval"' not in ln: continue
         try: r = json.loads(ln)
         except Exception: continue
-        best = max(best, r.get("all/exact_accuracy", 0)*100); last = r
+        best = max(best, r.get("all/exact_accuracy", 0)*100); best_tok = max(best_tok, r.get("all/accuracy", 0)*100); last = r
     smi = integrate_pw(pw); cc = cc_gpu_wh(emcsv)
     sp = os.path.join(OUT, "recipe_summary.csv")
     fields = ["tag","hidden","D_eff","batch","ema","steps_target","wall_s","best_exact_pct",
-              "final_exact_pct","final_token_pct","smi_net_Wh","cc_gpu_Wh","gross_agree_pct"]
+              "final_exact_pct","final_token_pct","best_token_pct","smi_net_Wh","cc_gpu_Wh","gross_agree_pct"]
     rec = {"tag":tag,"hidden":HIDDEN,"D_eff":DEPTH,"batch":BATCH,"ema":EMA,"steps_target":STEPS,
            "wall_s":round(wall,1),"best_exact_pct":round(best,4),
            "final_exact_pct":round((last or {}).get("all/exact_accuracy",0)*100,4),
            "final_token_pct":round((last or {}).get("all/accuracy",0)*100,4),
+           "best_token_pct":round(best_tok,4),
            "smi_net_Wh":round(smi[1],4) if smi else None,
            "cc_gpu_Wh":round(cc,4) if cc else None,
            "gross_agree_pct":(round(100*(1-abs(smi[0]-cc)/((smi[0]+cc)/2)),2) if (smi and cc) else None)}

@@ -7,8 +7,7 @@ The package maps the **energy–accuracy frontier of recursion depth versus para
 Recursive Models on symbolic reasoning, under a fixed compute/energy budget, using
 **Joules-to-target-accuracy** as the primary metric on a single consumer GPU (NVIDIA RTX 5060 Ti,
 16 GB). Framing is Green AI (efficiency frontier and cross-task regime map), not a forecasting scaling
-law. Every empirical number in the manuscript traces to a run artifact in `data/` (per-step learning
-curves, 1 Hz power series, CodeCarbon emissions).
+law. Every empirical number in the manuscript traces to a run artefact: the summary tables, 1 Hz power series and CodeCarbon emissions are in `data/` here, and the per-step learning curves (`progress_*.jsonl`) are in the Zenodo archive
 
 **Scale of the study.** 91 runs carry a per-run energy record, totalling **18.6 kWh** of measured GPU
 energy. The **49 faithful-recipe runs** that produce every reported result account for **16.1 kWh**; the
@@ -18,10 +17,10 @@ remaining 42 are pilot and calibration runs. Regenerate this breakdown with
 
 **Energy cross-validation.** CodeCarbon versus integrated `nvidia-smi` agree to **98.8–99.95% on every
 one of the 49 faithful-recipe runs**. The band has two structures worth knowing: agreement depends on the
-measurement window (an aborted 31 s pilot run gives the single 95.9% outlier), and it depends on the
-driver stack (the last six runs, executed after a driver upgrade on the same card, sit systematically at
-98.82–98.88% against 99.36–99.95% before it). Scope matters: the earlier pilot runs, which contribute no
-reported number, fall as low as 95.9%. Per-run agreement for both regimes is in the reconciliation table.
+measurement window (two aborted 31 s pilot runs give the only values below 98.68%, 98.6% and 95.9%), and it depends on the
+driver stack (the last twelve runs, the Maze-Hard and ARC-AGI-1 seed extensions executed after a driver
+upgrade on the same card, sit systematically at 98.82–98.93% against 99.11–99.95% for the 37 runs before it). Scope matters: the earlier pilot runs, which contribute no
+reported number, fall as low as 95.9%. Per-run agreement is the `gross_agree_pct` column of each summary CSV; the reconciliation table gives its range per regime.
 
 
 > **Where the data lives.** This repository carries the code, protocol, and the compact run artifacts.
@@ -32,7 +31,6 @@ reported number, fall as low as 95.9%. Per-run agreement for both regimes is in 
 
 ## Contents
 ```
-.zenodo.json        Zenodo deposition metadata
 LICENSE                 MIT (our code)
 THIRD_PARTY_LICENSES.md Licences of the vendored third-party works
 requirements.txt        Python dependencies (torch cu128 for Blackwell GPUs)
@@ -76,7 +74,7 @@ licence, and Sudoku-Extreme alone is ~762 MB. See `vendor/README.md`.
 ## Two regimes (read this before using the data)
 - **Faithful-recipe regime** (`recipe_out/`, `maze_depth_out/`, `arc_depth_out/`, `maze_real_out/`):
   the faithful TRM recipe (hidden >= 256, EMA, ~1M augmented examples, thousands of optimizer steps).
-  Sudoku exact accuracy reaches 36–62%; Maze token accuracy 83–85%. **These are the manuscript results.**
+  Sudoku exact accuracy reaches 36–62%; Maze token accuracy 86–87%, ARC 31–36% (best checkpoint). **These are the manuscript results.**
 - **Pilot/toy regime** (the remaining `*_out/` folders): early under-trained runs (small width, no EMA)
   with exact accuracy 0–15%. Retained only as a pilot/feasibility record; do **not** read final claims
   from these. Superseded by the faithful-recipe regime.
@@ -101,39 +99,39 @@ All uncertainties are the **sample** standard deviation (ddof=1) over three seed
   deep recursion is significantly worse than no recursion at all.
 - **Energy cost model.** From the calibration microbenchmark (direct hardware measurement, regime-independent):
   per-step energy scales as (params x D_eff)^0.84 (R^2 = 0.98, bootstrap 95% CI [0.75, 0.92]).
-- **Maze-Hard, depth axis (h256, FIVE seeds), token accuracy** (exact = 0, uninformative on Maze):
-  D9 = 83.17 ± 0.53, D18 = 83.58 ± 0.51, **D36 = 84.91 ± 0.58 %**. The deepest setting is
-  **significantly the best**: Welch D36 vs D9 t = 4.96, p = 0.0011; D36 vs D18 t = 3.88, p = 0.0049,
-  both surviving Bonferroni; ANOVA F(2,12) = 14.23. D18 vs D9 is not significant (p = 0.25). The grid was
-  extended from three to five seeds because at n = 3 the gap (1.56 pt, p = 0.044) missed the corrected
-  threshold while its effect size made that null untrustworthy; reporting the n = 3 null would have been
-  an artefact of stopping early. The margin is small (1.74 pt) and costs 3% more energy, but no D9 seed
-  reaches 83.85%, below the D36 mean, so shallow cannot get there by running longer.
-- **ARC-AGI-1, depth axis (h256, 5 seeds), token accuracy** (exact = 0): D9 = 31.2 ± 3.3,
-  D18 = 30.7 ± 3.6, D36 = 25.8 ± 0.6 %. Deepest is worst (D9 ≈ D18 > D36). Run at 3 seeds first
-  (D9 vs D36 p = 0.063), then **pre-registered** to 5 seeds because the effect size was large; see
-  EXPERIMENT_LOG phase AW, committed before the runs. At n = 5 the omnibus test is significant
-  (ANOVA F(2,12) = 5.52, p = 0.020) but **the decisive pairwise contrast misses Bonferroni**
-  (D9 vs D36 p = 0.020 against α = 0.0167, d = 2.29; D9 vs D18 p = 0.82, genuinely flat). Built from ARC-AGI-1 training+evaluation (no ConceptARC),
-  test truncated to 512; absolute scores are far below the multi-GPU state of the art, so we compare the
-  depth ordering at matched compute, not headline scores.
-- **Cross-task verdict.** The depth effect changes **sign**, not merely magnitude, across tasks. Where
-  the metric still separates configurations (Sudoku exact, 38 points of headroom left), depth is expensive and
-  shallow recursion wins decisively. Where the metric has saturated (Maze token, everything within two
-  points near 85%), the deepest setting wins significantly, by 1.74 points for 3% more energy. On ARC the omnibus effect is
-  significant at five seeds but the decisive pairwise contrast fails the same Bonferroni rule applied on
-  the other two axes, so it is reported as **unresolved**: not a third regime, and not evidence of no
-  effect either. The contribution is therefore a cross-task
-  energy–accuracy **regime map** whose organising condition is where a task sits on its own metric, not a
-  universal law about recursion.
-
+- **Checkpoint rule (all tasks).** A configuration is scored by its BEST evaluation checkpoint
+  (`best_exact_pct` on Sudoku, `best_token_pct` on Maze/ARC), as in Algorithm 1 of the manuscript.
+  `best_token_pct` was derived post hoc from `progress_<tag>.jsonl` by `code/add_best_token.py`
+  (2026-09-15); `final_token_pct` is kept alongside. The final-checkpoint reading is reported in the
+  manuscript where it differs (Maze: 83.2/83.6/84.9 %, deepest degrades least after an early peak).
+- **ARC-AGI-1, depth axis (h256, FIVE seeds), token accuracy, best checkpoint** (exact = 0):
+  **D9 = 36.27 ± 3.18**, D18 = 33.34 ± 3.37, D36 = 30.59 ± 1.78 %. The shallow-versus-deepest contrast
+  survives Bonferroni (Welch t = 3.48, p = 0.012, d = 2.20; threshold 0.0167); adjacent contrasts do not
+  (p = 0.20, 0.16); ANOVA F(2,12) = 4.90, p = 0.028. The grid was pre-registered and extended from three
+  seeds (p = 0.14 at n = 3) to five (EXPERIMENT_LOG phase AW). D9 matches D36's best accuracy on
+  155 ± 82 Wh against D36's 278 Wh (every seed reaches it; four of five below D36's budget, 81-160 Wh, one needs 291 Wh; 44% saving on average).
+- **Maze-Hard, depth axis (h256, FIVE seeds), token accuracy, best checkpoint** (exact = 0):
+  D9 = 86.66 ± 0.18, D18 = 86.76 ± 0.09, D36 = 86.54 ± 0.29 %. **Null**: no contrast approaches
+  significance (p = 0.42, 0.16, 0.31; ANOVA F(2,12) = 1.59, p = 0.24). The metric has saturated: the seed-mean
+  curve of every depth stops improving by its fourth of 25 checkpoints; the shallower settings then drift
+  down while the deepest plateaus; the deepest spends 3% more energy (324 vs 314 Wh) for no gain.
+- **Cross-task verdict.** The depth effect never changes sign; its size tracks how much room the
+  task's metric still leaves. Where the metric discriminates (Sudoku exact, 38 points of headroom; ARC
+  token, 64) shallow recursion wins, by 26 and 5.7 points; where it has saturated (Maze token, 13 points
+  of headroom, all depths within 0.3 points) depth changes nothing and only costs energy.
 ## Reproducing
 1. Build the environment: `code/rebuild_env.sh` (copies the vendored TRM source from `vendor/`, applies
    the two patches in `vendor/patches/`, creates a `cu128` PyTorch venv, and builds the augmented
-   Sudoku/Maze datasets with the test split truncated to 512). Install `requirements.txt`. Run it from
-   the package root, or set `VENDOR=/path/to/vendor`.
-2. Faithful-recipe runs: `run_recipe.py` reads env vars `HIDDEN/DEPTH/BATCH/STEPS/SEED/DATA/OUT_DIR/
-   NEVAL/EMA` and emits, per run, `progress_<tag>.jsonl` (train loss/step + eval/checkpoint),
+   Sudoku dataset with the test split truncated to 512). Install `requirements.txt`. Set `REPO`,
+   `ENV_DIR` and `VENDOR` if the defaults (package root, `<root>/trm-env`, `<root>/vendor`) do not suit.
+   Maze-Hard and ARC-AGI-1 are built with the upstream builders, then truncated the same way:
+   `python dataset/build_maze_dataset.py --output-dir data/maze-aug` (1000 mazes x 8 dihedral
+   augmentations) and `python dataset/build_arc_dataset.py --output-dir data/arc1-aug1k-e512
+   --subsets training evaluation --num-aug 1000` with the raw tasks from `vendor/arc-agi-1-raw/`, followed
+   by the same 512-instance test truncation as `rebuild_env.sh` applies to Sudoku.
+2. Faithful-recipe runs: `run_recipe.py` reads env vars `TRM_DIR/HIDDEN/DEPTH/BATCH/STEPS/SEED/DATA/
+   OUT_DIR/NEVAL/EMA`, plus `ARCH=transformers_baseline` for the non-recursive baseline (h512, 8 layers,
+   batch 192, 100k steps) and `GROUPS=3080` for ARC-AGI-1 and emits, per run, `progress_<tag>.jsonl` (train loss/step + eval/checkpoint),
    `pw_<tag>.csv` (1 Hz power), `emissions_<tag>.csv` (CodeCarbon), and a self-describing summary row.
 3. Significance: `stats_table.py` reproduces every Welch t / one-way ANOVA / Bonferroni number in the
    paper from the per-task summary CSVs, and writes `stats_table_contrasts.csv`,
@@ -144,6 +142,10 @@ All uncertainties are the **sample** standard deviation (ddof=1) over three seed
 5. Calibration and pilot: see `PROTOCOL.md` §8 and §11.
 
 ## Known limitations recorded in the data
+- The h768 x D_eff=36 microbenchmark cell ran out of memory on the 16 GB card (Table 1 of the manuscript);
+  it has no row in `microbench_results.csv`.
+- Baseline rows in `recipe_out/recipe_summary.csv` carry `D_eff=8` (the runner's DEPTH env variable was
+  reused to pass the 8-layer setting); the baseline has no recursion.
 - The compiled `adam-atan2` optimizer does not build on sm_120; all runs use the AdamW shim in
   `code/adam_atan2_fallback.py`. Applied identically to every configuration, so comparisons remain matched.
 - Nine pilot replication runs (`budget_out/replication_summary.csv`, seeds 0–2) recorded accuracy but
@@ -164,3 +166,4 @@ Pendidikan Tinggi, Sains, dan Teknologi), *Penelitian Fundamental - Reguler* sch
 no. 283/C3/DT.05.00/PL-BARU/2026 (30 January 2026), devolved through LLDIKTI Region IV contract
 no. 1650/LL4/PG/2026 (21 April 2026) and institutional contract no. PKS.003/WAREKIII-ULBI/V/2026
 (11 May 2026).
+

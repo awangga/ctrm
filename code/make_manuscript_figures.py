@@ -68,8 +68,8 @@ def cumulative_wh(ts, w):
     return np.concatenate([[0.0], np.cumsum(seg)]) / 3600.0
 
 
-def eval_points(path):
-    """(step, exact%) dari tiap checkpoint eval, plus waktu unix."""
+def eval_points(path, metric="all/exact_accuracy"):
+    """(step, acc%) dari tiap checkpoint eval, plus waktu unix."""
     out = []
     for line in open(path):
         if '"phase": "eval"' not in line:
@@ -78,11 +78,11 @@ def eval_points(path):
             d = json.loads(line)
         except json.JSONDecodeError:
             continue
-        out.append((float(d["t"]), int(d["step"]), 100.0 * float(d.get("all/exact_accuracy", 0.0))))
+        out.append((float(d["t"]), int(d["step"]), 100.0 * float(d.get(metric, 0.0))))
     return out
 
 
-def trajectory(tag, out_dir):
+def trajectory(tag, out_dir, metric="all/exact_accuracy"):
     """Lintasan (Wh kumulatif, exact%) untuk satu run."""
     pw = os.path.join(out_dir, f"pw_{tag}.csv")
     pg = os.path.join(out_dir, f"progress_{tag}.jsonl")
@@ -93,7 +93,7 @@ def trajectory(tag, out_dir):
         return None
     cum = cumulative_wh(ts, w)
     xs, ys = [], []
-    for t, _step, acc in eval_points(pg):
+    for t, _step, acc in eval_points(pg, metric):
         i = int(np.searchsorted(ts, t))
         if i >= len(cum):
             i = len(cum) - 1
@@ -138,8 +138,8 @@ def fig_energy_accuracy(out_path, data_root):
                     markeredgecolor="white", markeredgewidth=0.6, zorder=4)
             # Label ditaruh di bawah sumbu target dan digeser per kedalaman supaya tidak
             # ditembus kurva tetangga; sebelumnya kurva D18 melintasi teks label D9.
-            dy = {9: -30, 18: -18, 36: -18}.get(depth, -18)
-            dx = {9: -46, 18: 6, 36: 6}.get(depth, 6)
+            dy = {9: 9, 18: -18, 36: -18}.get(depth, -18)
+            dx = {9: -78, 18: 6, 36: 6}.get(depth, 6)
             ax.annotate(f"{mx:.0f} Wh ({len(reach)}/{len(curves)})", (mx, TARGET),
                         textcoords="offset points", xytext=(dx, dy), fontsize=7.5, color=colour,
                         bbox=dict(boxstyle="round,pad=0.16", fc="white", ec="none", alpha=0.85))
@@ -245,8 +245,8 @@ def perseed_table(data_root):
     import re as _re
     import statistics as _st
     src = [("Sudoku-Extreme (exact)", "recipe_out/recipe_summary.csv", "best_exact_pct"),
-           ("Maze-Hard (token)", "maze_depth_out/recipe_summary.csv", "final_token_pct"),
-           ("ARC-AGI-1 (token)", "arc_depth_out/recipe_summary.csv", "final_token_pct")]
+           ("Maze-Hard (token)", "maze_depth_out/recipe_summary.csv", "best_token_pct"),
+           ("ARC-AGI-1 (token)", "arc_depth_out/recipe_summary.csv", "best_token_pct")]
     print("\n  Akurasi per seed (rezim faithful):")
     for task, rel, col in src:
         path = os.path.join(data_root, rel)
@@ -335,7 +335,7 @@ def agreement_floor(data_root):
 
 
 def iso_accuracy_energy(data_root):
-    """Energi yang dibutuhkan D9 untuk MENYAMAI akurasi akhir tiap pesaing.
+    """Energi yang dibutuhkan D9 untuk MENYAMAI akurasi checkpoint-terbaik tiap pesaing.
 
     Perbandingan iso-akurasi: metrik Joules-to-target yang sama, tetapi target
     diambil dari akurasi akhir yang benar-benar dicapai pesaing, bukan satu ambang
@@ -345,7 +345,7 @@ def iso_accuracy_energy(data_root):
     rec = os.path.join(data_root, "recipe_out")
     rivals = [("D_eff=36", 36.26, 340.4), ("D_eff=18", 50.07, 358.0),
               ("non-recursive baseline", 49.67, 384.0)]
-    print("\n  Energi iso-akurasi: biaya D9 untuk menyamai akurasi akhir pesaing")
+    print("\n  Energi iso-akurasi: biaya D9 untuk menyamai akurasi terbaik pesaing")
     for name, target, rival_wh in rivals:
         per = []
         for seed in (0, 1, 2):
@@ -366,15 +366,43 @@ def iso_accuracy_energy(data_root):
               f";  CO2e {rival_wh/1000*GRID*1000:.0f} -> {m/1000*GRID*1000:.0f} g")
 
 
+def iso_accuracy_energy_arc(data_root):
+    """ARC-AGI-1 (token, checkpoint terbaik): energi D9 untuk menyamai akurasi terbaik D36."""
+    import statistics as _st
+    arc = os.path.join(data_root, "arc_depth_out")
+    sp = os.path.join(arc, "recipe_summary.csv")
+    if not os.path.exists(sp):
+        return
+    rows = list(csv.DictReader(open(sp)))
+    d36 = [float(r["best_token_pct"]) for r in rows if r["D_eff"] == "36"]
+    wh36 = [float(r["smi_net_Wh"]) for r in rows if r["D_eff"] == "36"]
+    target, rival_wh = _st.mean(d36), _st.mean(wh36)
+    per = []
+    for seed in range(5):
+        tr = trajectory(f"h256_d9_recipe_b48_s{seed}", arc, metric="all/accuracy")
+        if tr is None:
+            continue
+        x, y = tr
+        h = np.where(y >= target)[0]
+        per.append(float(x[h[0]]) if len(h) else None)
+    ok = [v for v in per if v is not None]
+    cells = ", ".join(f"{v:.0f}" if v is not None else "--" for v in per)
+    if ok:
+        m = _st.mean(ok); sd = _st.stdev(ok) if len(ok) > 1 else 0.0
+        print(f"\n  ARC iso-akurasi (token, checkpoint terbaik): D9 menyamai D36 {target:.2f}%: "
+              f"D9=[{cells}] -> {m:.0f}+/-{sd:.0f} Wh ({len(ok)}/{len(per)}); D36 spent {rival_wh:.0f} Wh, "
+              f"hemat {100*(rival_wh-m)/rival_wh:.0f}%")
+
+
 def fig_crosstask(out_path, data_root):
     """Efek kedalaman di tiga task, memakai SELURUH seed yang tersedia per task."""
     import collections
     import statistics as _st
     src = [("Sudoku-Extreme", "recipe_out/recipe_summary.csv", "best_exact_pct",
             "Exact accuracy (%)", ("h512_d9_recipe", "h512_d18_recipe", "h512_d36_recipe")),
-           ("ARC-AGI-1", "arc_depth_out/recipe_summary.csv", "final_token_pct",
+           ("ARC-AGI-1", "arc_depth_out/recipe_summary.csv", "best_token_pct",
             "Token accuracy (%)", ("h256_d9_recipe", "h256_d18_recipe", "h256_d36_recipe")),
-           ("Maze-Hard", "maze_depth_out/recipe_summary.csv", "final_token_pct",
+           ("Maze-Hard", "maze_depth_out/recipe_summary.csv", "best_token_pct",
             "Token accuracy (%)", ("h256_d9_recipe", "h256_d18_recipe", "h256_d36_recipe"))]
     fig, axes = plt.subplots(1, 3, figsize=(6.6, 2.5))
     for ax, (task, rel, col, ylab, prefixes) in zip(axes, src):
@@ -399,7 +427,7 @@ def fig_crosstask(out_path, data_root):
         ax.set_xlabel(r"$D_{\mathrm{eff}}$")
         ax.set_ylabel(ylab, fontsize=8)
         ax.set_title(f"{task}  ($n{{=}}{n}$)", fontsize=8.5)
-        ax.margins(x=0.22)
+        ax.margins(x=0.22, y=0.18)
     fig.tight_layout(w_pad=1.4)
     fig.savefig(out_path)
     plt.close(fig)
@@ -564,9 +592,9 @@ def fig_regime_map(out_path, data_root):
         ("Sudoku-Extreme", "exact", os.path.join(rec, "recipe_summary.csv"), "best_exact_pct",
          lambda r: r["hidden"] == "512" and "recipe" in r["tag"], "discriminating"),
         ("ARC-AGI-1", "token", os.path.join(data_root, "arc_depth_out", "recipe_summary.csv"),
-         "final_token_pct", lambda r: True, "unresolved"),
+         "best_token_pct", lambda r: True, "discriminating"),
         ("Maze-Hard", "token", os.path.join(data_root, "maze_depth_out", "recipe_summary.csv"),
-         "final_token_pct", lambda r: True, "saturated"),
+         "best_token_pct", lambda r: True, "saturated"),
     ]
     fig, (axL, axR) = plt.subplots(1, 2, figsize=(6.6, 3.0), sharey=True,
                                    gridspec_kw={"width_ratios": [1.55, 1.0], "wspace": 0.08})
@@ -597,9 +625,8 @@ def fig_regime_map(out_path, data_root):
         diff = means["36"] - means["9"]
         se = abs(diff / t)
         ci = _tcrit(df) * se
-        # Ambang Bonferroni per sumbu (3 kontras), sama dgn Tabel 8. ARC lolos 0.05
-        # tetapi TIDAK lolos 0.0167, dan penanda terisi berarti 'mapan' -- jadi 0.05
-        # akan menyesatkan.
+        # Ambang Bonferroni per sumbu (3 kontras), sama dengan Tabel A.1. Penanda terisi
+        # berarti kontras D36-D9 lolos 0.0167 (fase BJ: Sudoku dan ARC terisi, Maze kosong).
         sig = pval < 0.05 / 3
         axR.errorbar(diff, y, xerr=ci, fmt="D", ms=5, color=shades[regime], ecolor=shades[regime],
                      elinewidth=1.3, capsize=3, mfc=shades[regime] if sig else "white", zorder=3)
@@ -657,7 +684,7 @@ def fig_protocol(out_path):
     box(50, 33, 15, 10, ["nvidia-smi", "power.draw, 1 Hz"], fc="#EAF2FA")
     box(50, 5, 15, 10, ["CodeCarbon", "NVML energy"], fc="#EAF2FA")
     box(68.5, 19, 20, 12, ["idle subtraction", "4.7 W constant", "cross-validate:",
-                           r"agreement $\geq$ 98.8%"])
+                           "agree 98.8-99.95%"])
     box(91.5, 19, 12.5, 12, ["Joules to", "target", "accuracy"], fc="#FDF0E3")
 
     arrow(21.3, 25, 24.2, 25)
@@ -668,7 +695,7 @@ def fig_protocol(out_path):
     arrow(88.8, 25, 91.2, 25)
 
     arrow(78, 18.3, 78, 3.6, color=OI["vermillion"], ls=(0, (2.5, 1.6)))
-    ax.text(50, 1.2, "rejected: instruments disagree, or wall time < 120 s (aborted / OOM)",
+    ax.text(50, 1.2, "rejected: wall time < 120 s (aborted / OOM) or incomplete budget",
             ha="center", va="bottom", fontsize=7.6, color=OI["vermillion"], style="italic")
     fig.savefig(out_path)
     plt.close(fig)
@@ -745,7 +772,7 @@ def fig_design_plane(out_path, data_root):
     ax.set_yscale("log"); ax.set_yticks([1, 9, 18, 36])
     ax.set_yticklabels(["1", "9", "18", "36"])
     ax.set_xticks([256, 512, 768])
-    ax.set_xlabel(r"hidden size $h$   ($P \propto h^2$)")
+    ax.set_xlabel(r"hidden size $h$")
     ax.set_ylabel(r"recursion depth $D_{\mathrm{eff}}$")
     ax.set_xlim(175, 880); ax.set_ylim(0.62, 62)
     ax.grid(alpha=0.25, lw=0.5)
@@ -784,6 +811,7 @@ def main():
     pilot_vs_faithful(os.path.abspath(a.data_root))
     agreement_floor(os.path.abspath(a.data_root))
     iso_accuracy_energy(os.path.abspath(a.data_root))
+    iso_accuracy_energy_arc(os.path.abspath(a.data_root))
     eval_share_table(os.path.abspath(a.data_root))
 
 

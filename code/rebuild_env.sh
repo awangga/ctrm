@@ -3,8 +3,11 @@
 # Penyebab insiden fase L: scratchpad /tmp terhapus saat sesi berganti. Solusi: ENV_DIR durable.
 # Idempotent: aman dijalankan ulang (skip langkah yang sudah selesai).
 set -uo pipefail
-REPO=/home/adb/awangga/trm
-ENV_DIR=/home/adb/awangga/trm-env
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Paket Zenodo: HERE=<pkg>/code, vendor di <pkg>/vendor. Repo kerja: HERE=eksperimen/frontier.
+if [ -d "$HERE/../vendor" ]; then PKG="$(cd "$HERE/.." && pwd)"; else PKG="$(cd "$HERE/../.." && pwd)/zenodo"; fi
+REPO="${REPO:-$(cd "$PKG/.." && pwd)}"
+ENV_DIR="${ENV_DIR:-$REPO/trm-env}"
 TRM="$ENV_DIR/TRM"
 VENV="$TRM/.venv"
 PY="$VENV/bin/python"
@@ -15,7 +18,7 @@ mkdir -p "$ENV_DIR"
 # 1) sumber TRM: pakai salinan ter-vendor di paket (offline, versi terpaku).
 #    VENDOR menunjuk zenodo/vendor di repo kerja; di dalam arsip Zenodo, jalankan skrip ini
 #    dari akar paket sehingga VENDOR=./vendor. Tidak ada clone jaringan.
-VENDOR="${VENDOR:-$REPO/zenodo/vendor}"
+VENDOR="${VENDOR:-$PKG/vendor}"
 if [ ! -f "$TRM/pretrain.py" ]; then
   if [ -d "$VENDOR/TinyRecursiveModels" ]; then
     log "salin TRM dari vendor ($VENDOR/TinyRecursiveModels, commit c011037)..."
@@ -57,7 +60,7 @@ if [ -f "$VENDOR/patches/0001-emit-per-step-progress-and-eval-metrics.patch" ] \
       || patch -p1 --forward < "$VENDOR/patches/0001-emit-per-step-progress-and-eval-metrics.patch" ) \
     && log "patch vendor diterapkan" || log "patch vendor gagal, pakai skrip fallback"
 fi
-"$PY" "$REPO/zenodo/code/patch_pretrain_print_metrics.py" "$TRM/pretrain.py" || true
+"$PY" "$PKG/code/patch_pretrain_print_metrics.py" "$TRM/pretrain.py" || true
 # shim: coba install adam-atan2 asli; jika gagal, taruh shim sbg module adam_atan2.py
 if ! "$PY" -c "import adam_atan2" 2>/dev/null; then
   log "adam-atan2 tak ada → pasang shim AdamW"

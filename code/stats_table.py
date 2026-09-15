@@ -100,8 +100,8 @@ def cells(rows, key, metric, filt=lambda r: True):
 
 def main():
     sud, sud_p = load("recipe_out/recipe_summary.csv", "best_exact_pct")
-    mz, mz_p = load("maze_depth_out/recipe_summary.csv", "final_token_pct")
-    ar, ar_p = load("arc_depth_out/recipe_summary.csv", "final_token_pct")
+    mz, mz_p = load("maze_depth_out/recipe_summary.csv", "best_token_pct")
+    ar, ar_p = load("arc_depth_out/recipe_summary.csv", "best_token_pct")
 
     sud_depth = cells(sud, "D_eff", "best_exact_pct",
                       lambda r: r["hidden"] == "512" and "recipe" in r["tag"])
@@ -109,8 +109,8 @@ def main():
                       lambda r: r["D_eff"] == "18" and "recipe" in r["tag"])
     sud_base = cells(sud, "tag", "best_exact_pct", lambda r: "baseline" in r["tag"])
     base_vals = [v for vs in sud_base.values() for v in vs]
-    mz_depth = cells(mz, "D_eff", "final_token_pct")
-    ar_depth = cells(ar, "D_eff", "final_token_pct")
+    mz_depth = cells(mz, "D_eff", "best_token_pct")
+    ar_depth = cells(ar, "D_eff", "best_token_pct")
 
     FAM = []  # (family, label, kind, payload)
     FAM += [("Sudoku depth", r"$D_9$ vs $D_{18}$", "t", (sud_depth["9"], sud_depth["18"])),
@@ -119,6 +119,7 @@ def main():
     FAM += [("Sudoku width", r"$h_{512}$ vs $h_{256}$", "t", (sud_width["512"], sud_width["256"])),
             ("Sudoku width", r"$h_{512}$ vs $h_{768}$", "t", (sud_width["512"], sud_width["768"]))]
     FAM += [("Sudoku baseline", r"$D_9$ vs non-recursive", "t", (sud_depth["9"], base_vals)),
+            ("Sudoku baseline", r"$D_{18}$ vs non-recursive", "t", (sud_depth["18"], base_vals)),
             ("Sudoku baseline", r"$D_{36}$ vs non-recursive", "t", (sud_depth["36"], base_vals))]
     # Ketiga sumbu depth memuat SEMUA 3 kontras berpasangan, supaya ambang Bonferroni
     # ditentukan oleh banyaknya kontras yang benar-benar mungkin (3), bukan oleh berapa
@@ -176,7 +177,7 @@ def main():
             lines.append(r"\midrule" if prev else "")
             head = (rf"$F({a['df1']},{a['df2']}){{=}}{a['F']:.1f}$, $p{{=}}{pf(a['p'])}$, "
                     rf"$n{{=}}{a['n_per_cell']}$/cell; " if a else "")
-            lines.append(rf"\multicolumn{{8}}{{@{{}}l}}{{\emph{{{r['family']}}} — {head}"
+            lines.append(rf"\multicolumn{{8}}{{@{{}}l}}{{\emph{{{r['family']}}}: {head}"
                          rf"Bonf. $\alpha{{=}}{r['bonf_thr']:.3f}$}} \\")
             prev = r["family"]
         lines.append(rf"\quad {r['contrast']} & {r['mean1']:.2f}$\pm${r['sd1']:.2f} & "

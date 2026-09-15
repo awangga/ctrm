@@ -1,6 +1,8 @@
-"""Fallback shim: AdamATan2 -> AdamW (drop-in for calibration).
-Only used if the compiled `adam-atan2` package fails to build.
-Throughput/energy calibration is insensitive to the exact optimizer math."""
+"""Fallback shim: AdamATan2 -> AdamW.
+The compiled `adam-atan2` package does not build for sm_120, so EVERY run in the study
+(calibration, pilot and faithful-recipe, TRM and baseline alike) uses this shim with the
+upstream lr / weight-decay / betas. Applied identically to all configurations, so
+comparisons remain matched; absolute accuracies are not those of the upstream recipe."""
 import torch
 
 class AdamATan2(torch.optim.AdamW):

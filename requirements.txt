@@ -9,4 +9,5 @@ omegaconf
 hydra-core
 huggingface_hub
 codecarbon>=2.3
+wandb             # imported by upstream pretrain.py (offline mode)
 scipy             # curve_fit / bootstrap CIs (PROTOCOL §7) and significance tests (sig_test.py)

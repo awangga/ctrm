@@ -1,2 +1,2 @@
-tag,hidden,D_eff,batch,ema,steps_target,wall_s,best_exact_pct,final_exact_pct,final_token_pct,smi_net_Wh,cc_gpu_Wh,gross_agree_pct
-h256_d18_recipe_b48_s0,256,18,48,True,8000,4829.3,0.0,0.0,85.4501,209.3554,214.9248,99.66
+tag,hidden,D_eff,batch,ema,steps_target,wall_s,best_exact_pct,final_exact_pct,final_token_pct,best_token_pct,smi_net_Wh,cc_gpu_Wh,gross_agree_pct
+h256_d18_recipe_b48_s0,256,18,48,True,8000,4829.3,0.0,0.0,85.4501,86.7372,209.3554,214.9248,99.66

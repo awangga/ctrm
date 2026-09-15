@@ -23,10 +23,15 @@ saturation point per task.
 1. Log with **CodeCarbon**; cross-check against integrated `nvidia-smi --query-gpu=power.draw` (1 Hz)
    on **every** run (target agreement > 95%). Achieved: **98.8–99.95% on all 49 faithful-recipe runs**;
    the earlier pilot runs, which contribute no reported number, fall as low as 95.9%. Per-run agreement
-   for both regimes is tabulated in `data/ablation_reports/run_energy_reconciliation.md`.
-2. Measure **idle/baseline** power and **subtract** to obtain net energy (additive-bias correction).
-3. **Lock GPU clocks**, same GPU for all runs (eliminate inter-device variance); log temperature.
-4. Report **training and inference energy separately**.
+   is the `gross_agree_pct` column of each summary CSV; `data/ablation_reports/run_energy_reconciliation.md`
+   gives its range per regime.
+2. Subtract a fixed idle constant (`IDLE_W = 4.7` W in `code/run_recipe.py`, just above the 4.04 W sampler
+   floor observed across all released logs) to obtain net energy; discard runs shorter than 120 s as
+   aborted, and check every reported run by hand for completeness (wall time and step count).
+3. Same GPU for all runs (eliminates inter-device variance). *Planned, not applied:* clock locking and
+   temperature logging.
+4. *Planned, not applied:* separate training and inference energy. The reported figure is net training
+   energy including the pinned periodic evaluation.
 5. Do **not** rely on raw `nvidia-smi` alone (sensor undersampling is a known bias).
 
 ## 5. ⚠ Evaluation-cost rule (critical, from calibration)
@@ -69,7 +74,8 @@ Code:
   `HIDDEN/DEPTH/BATCH/STEPS/SEED/DATA/OUT_DIR/NEVAL/EMA`.
 - `code/stats_table.py` — Welch t-test, one-way ANOVA, Bonferroni from the summary CSVs (reproduces the
   reported significance numbers).
-- `code/joules_to_target.py`, `code/fit_extrapolation.py`, `code/energy_xval_report.py`,
+- `code/joules_to_target.py` (pilot grids only; the faithful-recipe Joules-to-target and iso-accuracy
+  energies are computed by `code/make_manuscript_figures.py`), `code/fit_extrapolation.py`, `code/energy_xval_report.py`,
   `code/analyze_crosstask.py`, `code/consolidate_ablation.py` — analysis (Joules-to-target, energy
   extrapolation hold-out, CodeCarbon-vs-nvidia-smi cross-validation, cross-task, ablation table).
 - `code/microbench.py` — instantiates TRM at each (hidden, depth); counts params; times forward+backward;
@@ -116,8 +122,9 @@ env ... DEPTH=18 BATCH=192 STEPS=25000 SEED=0 python code/run_recipe.py
 env ... DEPTH=36 BATCH=96  STEPS=25000 SEED=0 python code/run_recipe.py
 # repeat SEED=1,2; then stats_table.py over recipe_summary.csv
 ```
-Metric: exact accuracy for Sudoku (discriminating, 36–62%); **token accuracy for Maze** (exact = 0 there,
-uninformative). Energy is idle-corrected and cross-validated CodeCarbon vs `nvidia-smi` (98.8–99.95%).
+Metric: exact accuracy for Sudoku (discriminating, 36–62%); **token accuracy for Maze and ARC** (exact = 0
+there); every configuration is scored by its BEST evaluation checkpoint (`best_exact_pct` / `best_token_pct`),
+the same rule on every task. Energy is idle-corrected and cross-validated CodeCarbon vs `nvidia-smi` (98.8–99.95%).
 
 ## 11. Pilot frontier (validasi pipeline end-to-end)
 ```bash
