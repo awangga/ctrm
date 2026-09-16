@@ -2860,3 +2860,42 @@ sendiri tidak disentuh.
 
 **Status:** 48 halaman, 0 error LaTeX, 0 rujukan menggantung, satu overfull 2,61 pt (bawaan float).
 Commit: `41f6261`, `52e9194`, `48ec0b3`, `dfcdc2d`. Rantai BM masih berjalan.
+
+---
+
+## Fase BP: judul diganti agar membawa temuan (keputusan penulis, 2026-09-16)
+
+Penulis menilai judul fase BM ("The energy cost of recursion depth in tiny recursive models") akurat
+tetapi datar: ia menyebut topik, bukan hasil. Dua alasan teknis mendukung penggantian.
+
+1. **Pola judul venue.** Dari 12 paper SUSCOM yang disurvei, bentuk dua klausa dengan titik dua dan
+   penyebutan pertukaran secara eksplisit adalah pola dominan: "Trends in AI inference energy
+   consumption: Beyond the performance-vs-parameter", "Balancing carbon footprint and algorithm
+   performance in recommender systems", "Trade-offs between power consumption and response time in deep
+   learning systems".
+2. **Temuan kita lebih kuat daripada judulnya.** Klaim inti (kedalaman tak pernah membeli akurasi) sudah
+   berdiri di abstrak tetapi tidak terbaca di judul.
+
+**Judul baru:** *The energy cost of recursion depth: deeper tiny recursive models never bought accuracy
+at a fixed training budget*.
+
+Pagar anti-overclaim yang sengaja dipertahankan: kata "energy" tetap di klausa pertama (sinyal scope
+supaya editor tidak menggolongkan naskah sebagai paper arsitektur ML), dan "at a fixed training budget"
+membatasi klaim ke rezim yang benar-benar diukur. Frasa "never bought accuracy" dipilih, bukan "shallower
+is more accurate", karena yang terakhir tidak sah di Maze-Hard: di sana metriknya di bawah baseline
+copy-input sehingga akurasi tak bisa dihargai sama sekali. "Never bought accuracy" benar di ketiga task.
+
+**Cacat yang ketahuan saat menyapu judul:** blok `highlights` di `main.tex` dan berkas `highlights.txt`
+sudah **tidak sinkron**. Dua suntingan fase BO (butir 1 dicakupkan ke tiga task, butir Maze dilepaskan
+dari bahasa saturasi) hanya masuk ke `highlights.txt`, sementara PDF mengambil dari `main.tex`, sehingga
+halaman Highlights yang tercetak masih memuat versi lama. Keduanya kini diseragamkan ke satu himpunan
+lima butir, masing-masing <= 85 karakter. Pelajaran: kedua sumber itu harus diperlakukan sebagai satu
+berkas, dan halaman Highlights wajib dirender dan dibaca, bukan hanya `highlights.txt` yang di-grep.
+
+Kanal yang disapu: `main.tex`, `highlights.txt`, `cover_letter.md`, `README.md`, `zenodo/README.md`,
+`zenodo/.zenodo.json`, cermin `ctrm/README.md`, `CLAUDE.md`, dan
+`lapakhir/BAHAN_perubahan_setelah_lapkemajuan.md`. `EXPERIMENT_LOG` tidak ditulis ulang (append-only):
+judul lama tetap apa adanya di entri fase BM, penggantiannya dicatat di entri ini.
+
+**Status:** 48 halaman, 0 error, halaman Highlights dirender dan diperiksa. Rantai BM tetap berjalan
+(run 2/18).

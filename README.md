@@ -1,6 +1,6 @@
-# Reproducibility package: the energy cost of recursion depth in tiny recursive models
+# Reproducibility package: the energy cost of recursion depth
 
-Reproducibility artifact for the manuscript *"The energy cost of recursion depth in tiny recursive models"* (target:
+Reproducibility artifact for the manuscript *"The energy cost of recursion depth: deeper tiny recursive models never bought accuracy at a fixed training budget"* (target:
 *Sustainable Computing: Informatics and Systems*).
 
 The package prices **recursion depth in joules** for Tiny Recursive Models on symbolic reasoning, under
