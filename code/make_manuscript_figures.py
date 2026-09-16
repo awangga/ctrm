@@ -31,6 +31,22 @@ GRID = 0.67593         # kg CO2e/kWh, dari CodeCarbon (Indonesia), konstan di se
 # panel kiri 0.50\linewidth / 225,7 pt = 0,864x, panel kanan 0.43\linewidth / 194,1 pt = 0,864x.
 PANEL6_TICK = 9.5      # efektif 8,21 pt
 PANEL6_LABEL = 10.0    # efektif 8,64 pt
+# Penanda panel "(a)"/"(b)". Elsevier menyarankan TIDAK menggabung beberapa gambar jadi satu
+# berkas (alasan aksesibilitas); kedua panel Gbr. 6 memang sudah berkas terpisah, jadi yang
+# ditambahkan hanya penandanya supaya caption dan teks bisa menyebut panel secara eksplisit
+# dan pembaca layar bisa membedakannya. Ditaruh di ATAS area sumbu (bukan di dalamnya) agar
+# tidak mungkin menimpa titik atau error bar; bbox="tight" lalu memperlebar margin atas
+# sebesar tinggi teks, sama besar di kedua panel karena font dan offsetnya identik.
+PANEL6_PANELLAB = 10.5  # efektif 9,07 pt: sedikit di atas tick panel (8,21 pt)
+PANEL6_LAB_PAD = 3.0    # offset vertikal, pt
+
+
+def panel_label(ax, text):
+    """Tempel penanda panel di pojok kiri atas, tepat di luar area data."""
+    ax.annotate(text, xy=(0.0, 1.0), xycoords="axes fraction",
+                xytext=(0.0, PANEL6_LAB_PAD), textcoords="offset points",
+                ha="left", va="bottom", fontsize=PANEL6_PANELLAB, fontweight="bold",
+                color="0.15", annotation_clip=False)
 
 # Okabe-Ito
 OI = {"blue": "#0072B2", "orange": "#E69F00", "vermillion": "#D55E00",
@@ -820,6 +836,7 @@ def fig_sudoku_frontier(out_path, data_root):
     span = yhi - ylo
     ax.set_ylim(ylo - 0.11 * span, yhi + 0.06 * span)
     ax.grid(alpha=0.25, lw=0.5)
+    panel_label(ax, "(a)")
     fig.savefig(out_path); plt.close(fig)
     print(f"  tulis {out_path}")
 
@@ -846,6 +863,7 @@ def fig_width_optimum(out_path, data_root):
     ax.set_ylabel("Exact accuracy (%)", fontsize=PANEL6_LABEL)
     ax.set_xlim(-0.35, len(hs) - 0.65)
     ax.grid(alpha=0.25, lw=0.5)
+    panel_label(ax, "(b)")
     fig.savefig(out_path); plt.close(fig)
     print(f"  tulis {out_path}")
 

@@ -45,10 +45,11 @@ gives its range per regime.
 
 ## Contents
 ```
-.zenodo.json            Zenodo deposition metadata
+README.md               This file: what the package contains and how to read the results
 LICENSE                 MIT (our code)
 THIRD_PARTY_LICENSES.md Licences of the vendored third-party works
 requirements.txt        Python dependencies (torch cu128 for Blackwell GPUs)
+.gitignore              Standard Python ignore rules (build artefacts, caches, virtualenvs)
 PROTOCOL.md             Full experimental + energy-measurement protocol
 PREREGISTRATION.md      Pre-registration records: what was fixed before each added batch was launched
 prereg_BM.md            Pre-registration of the 18-run phase BM batch, with amendment 1; a verbatim
@@ -61,6 +62,7 @@ EXPERIMENT_LOG.md       Chronological working journal, every phase from A onward
                         new entries and marked, never applied by rewriting an old one. It records how
                         the study developed; for what the study CLAIMS, the manuscript is the reference
 vendor/
+  README.md             what is vendored here, and the benchmark data that is not
   TinyRecursiveModels/  upstream TRM source, pinned at c011037, PRISTINE (MIT, Samsung)
   patches/              the THREE changes we make to it, kept separate from the upstream tree:
     0001-emit-per-step-progress-and-eval-metrics.patch   per-step progress log + eval metrics
@@ -74,6 +76,7 @@ code/
   run_recipe.py            faithful-recipe runner; every reported run came from it
   run_BM_chain.sh          the phase BM run chain (18 pre-registered runs, see prereg_BM.md)
   run_arcdepth_s34.sh      the pre-registered ARC seed 3/4 chain (phase AW)
+  watch_arcdepth_s34.sh    watcher that reports progress of that chain while it runs
   run_accum_check.sh       equivalence check for the accumulation patch: ARC D9 at batch 48 x accum 1
                            against batch 24 x accum 2, whose train-loss curves must coincide
   run_frontier.sh  run_isoflop.py  run_budget.py  run_scale_sweep.py  run_converge.py
@@ -88,7 +91,8 @@ code/
   analyze_BM.py            the pre-specified phase BM analysis, written before any result existed
   reconcile_totals.py      run counts, energy totals and cross-validation ranges from the CSVs
   analyze_crosstask.py  analyze_frontier.py  consolidate_ablation.py  energy_xval_report.py
-  fit_extrapolation.py  joules_to_target.py                 report and ablation-table builders
+  fit_extrapolation.py  joules_to_target.py  joules_to_target_faithful.py
+                                               report and ablation-table builders
   -- figures --
   make_manuscript_figures.py  regenerates every manuscript figure from the summary CSVs
   plot_frontier.py  plot_isoflop.py  plot_budget.py          pilot-regime plots
