@@ -1,6 +1,6 @@
 # Reproducibility package: the energy cost of recursion depth
 
-Reproducibility artifact for the manuscript *"The energy cost of recursion depth: more joules, no extra accuracy at a fixed budget"* (target:
+Reproducibility artifact for the manuscript *"The energy cost of recursion depth: half the joules for the same accuracy"* (target:
 *Sustainable Computing: Informatics and Systems*).
 
 The package prices **recursion depth in joules** for Tiny Recursive Models on symbolic reasoning, under
@@ -30,8 +30,13 @@ remaining 42 are pilot and calibration runs. Regenerate this breakdown with
 `data/ablation_reports/run_energy_reconciliation.md`.
 
 **Energy cross-validation.** CodeCarbon versus integrated `nvidia-smi` agree to **98.8–99.95% on every
-one of the 49 faithful-recipe runs**. The band has two structures worth knowing: agreement depends on the
-measurement window (the only readings below 98.68% come from two aborted 31 s pilot runs, at 98.6% and
+one of the 49 faithful-recipe runs**. Read that agreement narrowly. Both readers poll the **same NVML
+sensor**, so they are not two independent instruments and the number is not a sensor validation. What the
+agreement bounds is the 1 Hz integration error and the bookkeeping between the two paths, NOT the accuracy
+of the sensor itself: absolute energies carry the sensor's own uncertainty, and only the ordering of
+configurations is protected, by holding the iso-environment fixed.
+
+The band has two structures worth knowing: agreement depends on the measurement window (the only readings below 98.68% come from two aborted 31 s pilot runs, at 98.6% and
 95.9%), and it depends on the driver stack (the last twelve runs, the Maze-Hard and ARC-AGI-1 seed
 extensions executed after a driver upgrade on the same card, sit systematically at 98.82-98.93% against
 99.11-99.95% for the 37 runs before them). Scope matters: those earlier pilot runs contribute no reported
@@ -49,6 +54,12 @@ PREREGISTRATION.md      Pre-registration records: what was fixed before each add
 prereg_BM.md            Pre-registration of the 18-run phase BM batch, with amendment 1; a verbatim
                         journal entry, in Indonesian. That batch was still running when this version
                         was assembled and no result from it is reported here
+EXPERIMENT_LOG.md       Chronological working journal, every phase from A onward, in Indonesian.
+                        APPEND-ONLY: old entries keep framings and numbers that were later withdrawn
+                        (the "regime map" framing, an earlier manuscript title, the Maze-Hard accuracy
+                        claim retracted after the trivial-baseline check). Corrections are appended as
+                        new entries and marked, never applied by rewriting an old one. It records how
+                        the study developed; for what the study CLAIMS, the manuscript is the reference
 vendor/
   TinyRecursiveModels/  upstream TRM source, pinned at c011037, PRISTINE (MIT, Samsung)
   patches/              the THREE changes we make to it, kept separate from the upstream tree:
@@ -109,9 +120,11 @@ data/
 ```
 
 ## Self-contained
-This archive is the complete and only distribution of the study's code, data, and protocol. Everything
-needed to audit or rerun the work is inside it: no companion repository has to be fetched, and no link
-outside this record has to resolve. The Tiny Recursive Models codebase the runner builds on is vendored
+This archive is a complete, self-contained distribution of the study's code, data, and protocol.
+Everything needed to audit or rerun the work is inside it: no companion repository has to be fetched, and
+no link outside this record has to resolve. A public code mirror of the same package additionally carries
+the append-only working journal `EXPERIMENT_LOG.md` (see `PREREGISTRATION.md` for how to read it);
+nothing in this archive depends on that mirror. The Tiny Recursive Models codebase the runner builds on is vendored
 at a pinned commit under `vendor/`, together with the raw ARC-AGI-1 tasks, so `code/rebuild_env.sh`
 performs no network clone. Licences for the vendored works are listed in `THIRD_PARTY_LICENSES.md`.
 
@@ -128,7 +141,9 @@ licence, and Sudoku-Extreme alone is ~762 MB. See `vendor/README.md`.
   from these. Superseded by the faithful-recipe regime.
 
 ## Main results (faithful-recipe regime, iso-compute: params x D_eff x batch x steps constant)
-All uncertainties are the **sample** standard deviation (ddof=1) over three seeds.
+All uncertainties are the **sample** standard deviation (ddof=1) over the seeds of the grid in question:
+three seeds on Sudoku-Extreme (depth axis, width axis, non-recursive baseline), five seeds on Maze-Hard
+and on ARC-AGI-1.
 
 - **Sudoku-Extreme, depth axis (h512, 3 seeds).** Exact accuracy is monotone in depth and shallow wins:
   D_eff 9 = **62.4 ± 0.3 %** > 18 = 50.1 ± 1.7 % > 36 = 36.3 ± 0.8 % (Welch t ≈ 12.5 / 12.9; ordering

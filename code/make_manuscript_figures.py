@@ -641,7 +641,7 @@ def _tcrit(df, alpha=0.05):
     return 0.5 * (lo + hi)
 
 
-def fig_regime_map(out_path, data_root):
+def fig_baseline_distance(out_path, data_root):
     """Kiri: posisi tiap task relatif terhadap baseline sepele dan langit-langit skalanya.
     Kanan: efek kedalaman bertanda dengan CI 95% Welch.
 
@@ -677,7 +677,7 @@ def fig_regime_map(out_path, data_root):
         means = {k: float(np.mean(v)) for k, v in groups.items()}
         # Fase BM: sumbu kiri adalah JARAK ke baseline sepele, bukan akurasi absolut. Pada skala
         # absolut 0-100% jarak Maze (-1 poin) tak terlihat, sehingga pesan utama figur hilang.
-        axL.plot([-6, 70], [y, y], color="0.88", lw=5, solid_capstyle="butt", zorder=1)
+        axL.plot([-6, 94], [y, y], color="0.88", lw=5, solid_capstyle="butt", zorder=1)
         for k in ("9", "18", "36"):
             axL.errorbar(means[k] - base, y, xerr=np.std(groups[k], ddof=1), fmt=marks[k], ms=4.4,
                          color=shades[status], ecolor=shades[status], elinewidth=1, capsize=2,
@@ -699,14 +699,18 @@ def fig_regime_map(out_path, data_root):
     axL.axvline(0, color=OI["vermillion"], lw=1.1, zorder=2)
     axL.text(0, len(specs) - 0.5, "trivial baseline", rotation=90, ha="right", va="top",
              fontsize=6.8, color=OI["vermillion"])
-    axL.set_xlim(-6, 82)
+    # Batas kanan 94, bukan 82: label rentang Sudoku ("+36.3 to +62.4", 53 pt pada 7.4 pt)
+    # mulai 8 pt di kanan penanda D=9 dan dulu menembus spine, lalu tertutup latar putih
+    # panel kanan sehingga teksnya terbaca terpotong. Batas ini murni ruang gambar.
+    axL.set_xlim(-6, 94)
     axL.set_ylim(-0.75, len(specs) - 0.35)
     axL.set_yticks([y for y, _ in ylabels])
     axL.set_yticklabels([lab for _, lab in ylabels], fontsize=8.2)
     axL.set_xlabel("Distance from the trivial baseline (points)")
     axR.axvline(0, color="0.45", lw=0.9, zorder=2)
     axR.set_xlabel(r"Depth effect, $D_{36}-D_9$ (points)")
-    axR.set_xlim(-33, 12)
+    # Idem: "-26.2" rata-kanan di bawah diamond Sudoku melewati spine kiri pada batas -33.
+    axR.set_xlim(-38, 12)
     for ax in (axL, axR):
         ax.grid(axis="x", alpha=0.25, lw=0.5)
     hs = [plt.Line2D([], [], marker=m, ls="", color="0.35", ms=5.2,
@@ -891,7 +895,7 @@ def main():
     fig_crosstask(os.path.join(out, "fig_crosstask_depth.pdf"), root)
     fig_learning(os.path.join(out, "fig_learning.pdf"), root)
     fig_iso_accuracy(os.path.join(out, "fig_iso_accuracy.pdf"), root)
-    fig_regime_map(os.path.join(out, "fig_regime_map.pdf"), root)
+    fig_baseline_distance(os.path.join(out, "fig_baseline_distance.pdf"), root)
     fig_protocol(os.path.join(out, "fig_protocol.pdf"))
     fig_sudoku_frontier(os.path.join(out, "fig_sudoku_frontier.pdf"), root)
     fig_width_optimum(os.path.join(out, "fig_width_optimum.pdf"), root)

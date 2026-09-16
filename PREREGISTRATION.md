@@ -20,9 +20,16 @@ committed first, and the analysis was run once, after the last run finished. Thr
   `prereg_BM.md` in this package, with amendment 1, both written before any run was launched. The batch
   was **still running** when this version was assembled, so it has no outcome to report here.
 
-The working journal itself (`eksperimen/frontier/EXPERIMENT_LOG.md`, every phase from A onward) is an
-internal laboratory notebook of the private working repository and is not redistributed; the entries
-that bind a reported result are the ones above.
+The working journal itself (`EXPERIMENT_LOG.md`, every phase from A onward, in Indonesian) **is**
+redistributed: it ships at the root of the public code mirror of this package. Read it as a laboratory
+notebook, not as a statement of what the study currently claims. It is **append-only** by rule, so early
+entries preserve framings and numbers that were later withdrawn, among them the "regime map" framing, an
+earlier manuscript title, and the Maze-Hard accuracy claim retracted after the trivial-baseline check.
+Corrections are appended as new entries and marked as corrections; an old entry is never rewritten to
+match a later result. Anyone reconciling a number should therefore take the manuscript as the reference
+for current claims, this file for what was fixed before each batch was launched, and the journal for the
+chronology of how the two came apart. Of the journal's entries, the ones that bind a reported result are
+those listed above.
 
 **Editorial note (September 2026).** The entry below is reproduced verbatim as it was committed, so it
 still uses the framing that was current when it was written, including the phrase "regime map" and the

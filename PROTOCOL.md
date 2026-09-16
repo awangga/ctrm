@@ -1,5 +1,8 @@
 # Experimental Protocol: the Energy Cost of Recursion Depth
 
+Protocol for the manuscript *"The energy cost of recursion depth: half the joules for the same accuracy"*
+(target: *Sustainable Computing: Informatics and Systems*).
+
 Versioned protocol for reproducing the study. Single consumer GPU (calibrated on NVIDIA RTX 5060 Ti
 16 GB, Blackwell sm_120). Built on the Tiny Recursive Models (TRM) codebase
 (github.com/SamsungSAILMontreal/TinyRecursiveModels).
@@ -19,9 +22,13 @@ Versioned protocol for reproducing the study. Single consumer GPU (calibrated on
 
 ## 3. Primary metric: Joules-to-target-accuracy
 Cumulative **net** energy to reach a fixed accuracy target τ per task (not kWh/run of differing
-duration). Build the Pareto frontier in (energy, accuracy) and locate the energy-optimal depth D* per
-task. A task whose metric fails §5.1 (below its trivial baseline) yields no D* and contributes only the
-energy comparison.
+duration). Each measured configuration is placed in the (energy, accuracy) plane and the comparison is
+read off the measured points: per depth, the energy needed to reach τ, and the energy each depth needs to
+reach the accuracy the deepest setting attains. **Correction (September 2026):** earlier versions of this
+protocol said to build a Pareto frontier and locate an energy-optimal depth `D*` per task. The grid is
+three measured depths {9, 18, 36}; nothing on the accuracy axis is fitted or interpolated, so no `D*` is
+estimated and none is reported (see §6). A task whose metric fails §5.1 (below its trivial baseline)
+yields no accuracy claim at all and contributes only the energy comparison.
 
 ## 4. Energy measurement (mandatory corrections)
 1. Log with **CodeCarbon**; cross-check against integrated `nvidia-smi --query-gpu=power.draw` (1 Hz)
@@ -71,10 +78,26 @@ These generalise beyond recursion depth; each one is a rule this protocol enforc
    reaches 86.5-86.8%, so that metric measures nothing about task mastery at this budget and supports no
    depth conclusion. Measured floors: Sudoku exact 0.00%, ARC token 25.00%, Maze token 50.03%/87.51%.
 
-## 6. IsoFLOP / budget procedure
-For each of ~5–6 fixed compute/energy budgets, sweep (P, D) at that budget; the loss/energy minimum is
-the compute-optimal allocation. Fit P*(C), D*(C), L*(C) on the smaller budgets and **validate by
-predicting** the held-out larger budget; report relative prediction error.
+## 6. Compute budget: what was actually run (corrected September 2026)
+**Superseded plan, kept for the record.** This section previously specified a multi-budget IsoFLOP
+procedure: for each of ~5–6 fixed compute/energy budgets, sweep (P, D) at that budget, fit `P*(C)`,
+`D*(C)`, `L*(C)` on the smaller budgets, and validate by predicting the held-out larger budget. That
+procedure was **never executed**. It is recorded here rather than deleted, because the planning history
+should not be rewritten, but it describes nothing in the released data.
+
+**What was run.** One fixed compute budget per comparison (iso-compute, §10: params × D_eff × batch ×
+steps held constant across the configurations being compared), with recursion depth swept over
+{9, 18, 36} on all three tasks and, on Sudoku-Extreme only, width over {256, 512, 768}. There is no sweep
+over 5–6 budgets and no held-out budget. The accuracy axis is reported as measured, per task: no curve is
+fitted to it and no extrapolation is made to budgets or scales that were not run. The measured range is
+roughly 1.5–2 dex on a single GPU, below the range at which an extrapolation claim would carry weight,
+which is why the study reports measurements on that axis and calls none of them a law.
+
+**Where fitting is used.** Quantitative fitting is confined to the energy cost model (§7): per-step energy
+against (params × D_eff), fitted on the 14 microbenchmark configurations, exponent b = 0.84 with
+bootstrap 95% CI [0.75, 0.92] and R² = 0.98. `code/validate_costmodel.py` tests that fit against realised
+per-run energy and reports the regimes in which it fails, so its stated scope is enforced rather than
+assumed.
 
 ## 7. Statistics
 - **Scoring rule, identical on every task:** a configuration is scored by its BEST evaluation checkpoint
@@ -85,8 +108,9 @@ predicting** the held-out larger budget; report relative prediction error.
   is not an artifact of the rule.
 - Welch two-sided t-tests and one-way ANOVA (`code/stats_table.py`), **Bonferroni 0.05/3 per axis**
   (threshold 0.0167) because three pairwise depth contrasts are tested per task.
-- Power-law fits in log space via `scipy.optimize.curve_fit`; **bootstrap confidence intervals** on
-  exponents (≥1000 resamples), consistent with the actual run count. `code/validate_costmodel.py` checks
+- Power-law fits in log space via `scipy.optimize.curve_fit`, applied to the **energy cost model only**
+  (§6) and never to the accuracy axis; **bootstrap confidence intervals** on exponents (≥1000 resamples),
+  consistent with the actual run count. `code/validate_costmodel.py` checks
   the fitted cost model against realised per-run energy and reports where it fails.
 - Replicate key points 3×; five seeds on the Maze-Hard and ARC-AGI-1 depth grids.
 - Baselines matched on **iso-FLOP/energy** (non-recursive + HRM variants in the codebase), plus the
