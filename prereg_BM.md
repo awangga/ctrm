@@ -12,7 +12,13 @@ sel terdalam tiap grid berjalan pada setengah batch tetangganya (Sudoku 96 lawan
 lawan 48) tanpa penyetelan ulang learning rate. Setiap kontras yang melibatkan D36 karena itu
 menguji kedalaman **dan** batch sekaligus. Bukti tambahan dari log yang sudah ada: kelima seed ARC
 D36 memuncak di checkpoint ke-6 atau ke-7 dari 25 lalu bertahan di 25,3-26,8%, pola yang lebih mirip
-optimisasi macet daripada efek kedalaman. Karena yang membatasi adalah memori, bukan compute,
+optimisasi macet daripada efek kedalaman.[^koreksi-plateau]
+
+[^koreksi-plateau]: KOREKSI (fase BO, 16 September 2026, sesudah dokumen ini dikunci): angka
+    "25,3-26,8%" dihitung ulang dari kelima `progress_*d36*.jsonl` dan yang benar adalah
+    **25,07-26,51%** pada checkpoint terakhir, dengan puncak 28,65-33,39% di checkpoint ke-6 atau
+    ke-7. Teks di atas dibiarkan apa adanya karena pra-registrasi tidak ditulis ulang; koreksi
+    dicatat di sini. Alasan menjalankan run tidak berubah. Karena yang membatasi adalah memori, bukan compute,
 **gradient accumulation** memulihkan batch efektif pada compute yang sama.
 
 **(B) Kontrol non-rekursif hanya ada di Sudoku.** Baseline transformer 8-layer dijalankan pada

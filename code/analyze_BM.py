@@ -80,6 +80,8 @@ if arc_old and arc_new:
     out.append(f"\nEnergi net D36: lama {e_old:.0f} Wh, baru {e_new:.0f} Wh "
                f"({100*(e_new-e_old)/e_old:+.0f}%). Langkah optimizer baru kira-kira separuh lama, "
                f"contoh yang dikonsumsi sama.")
+else:
+    out.append("\n## A1. Ringkasan run belum lengkap (`arc_depth_out/` atau `arc_d36_accum_out/`); batch A1 belum selesai.\n")
 
 # ---------------------------------------------------------------- A2 Sudoku
 sud_old = rows("recipe_out/recipe_summary.csv")
@@ -93,6 +95,8 @@ if sud_old and sud_new:
             line("D9 vs D36 (alokasi BARU, batch efektif 192)", o["9"], n36),
             line("D18 vs D36 (alokasi BARU)", o["18"], n36),
             line("D36 lama vs D36 baru (efek alokasi saja)", o["36"], n36)]
+else:
+    out.append("\n## A2. Ringkasan run belum lengkap (`recipe_out/` atau `sudoku_d36_accum_out/`); batch A2 belum selesai.\n")
 
 # ---------------------------------------------------------------- B baseline ARC
 base = rows("arc_baseline_out/recipe_summary.csv")
@@ -106,6 +110,8 @@ if base and arc_old:
     eb = st.mean([float(r["smi_net_Wh"]) for r in base])
     e9 = st.mean([float(r["smi_net_Wh"]) for r in arc_old if r["D_eff"] == "9"])
     out.append(f"\nEnergi net: D9 {e9:.0f} Wh, baseline {eb:.0f} Wh ({100*(eb-e9)/e9:+.0f}%).")
+else:
+    out.append("\n## B. Ringkasan run belum lengkap (`arc_baseline_out/`); batch B belum selesai.\n")
 
 # ---------------------------------------------------------------- C held-out split
 def best_from_preds(d, half):

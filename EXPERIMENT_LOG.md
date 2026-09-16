@@ -2768,3 +2768,95 @@ kutipannya tetap verbatim, termasuk bahasa "regime map" yang kini dicabut, karen
 ditulis ulang setelah hasil keluar tidak ada gunanya; pembaca diberi tahu di teks pembungkusnya.
 
 Rantai 18 run fase BM terus berjalan selama seluruh pekerjaan ini, tidak terganggu.
+
+---
+
+## Fase BO: butir reviewer minor dituntaskan, tiga klaim dikoreksi dari artefak (2026-09-16)
+
+Gelombang lima agen berkas-disjoint (satu pemilik per berkas) menutup sisa butir revisi R1/R2 yang tidak
+memerlukan run baru, sementara rantai 18 run fase BM masih berjalan (run 1/18 saat entri ini ditulis).
+
+### Naskah (commit `52e9194`)
+
+- **Section 2.** Lantai idle dijelaskan sebagai lantai kartu dingin, bukan level kartu bekerja. Dihitung
+  ulang dari 49 berkas `pw_*.csv` faithful: **14 run pernah turun di bawah 5 W, 32 tidak pernah membaca
+  di bawah 8,8 W, tiga sisanya di antara keduanya** (min-of-mins 4,08 W, max-of-mins 11,32 W). Sisa draw
+  konteks CUDA yang tertinggal di energi net paling besar 2%, tak cukup membalik urutan pasangan mana pun.
+  Jendela integrasi dinyatakan memuat penyiapan dataset/embedding (100-120 W, 7-58 s). Klaim "tabel rilis
+  memberi indeks checkpoint" dikoreksi: yang dicatat adalah nomor **step**. Kalimat plateau 140-175 W
+  dibatasi ke fase training saja agar tidak bertabrakan dengan fase penyiapan.
+- **Section 3/4.** Tiga fakta kalibrasi dibuat terbaca sebagai tiga; caption Tabel 2 diramping (langkah
+  terealisasi, `GROUPS=3080`, deskripsi baseline pindah ke badan teks); cakupan cost model dibatasi ke
+  rezim ukurnya; pembuka Section 4 diperbaiki jadi "All comparisons **between TRM configurations** are
+  iso-compute", karena baseline justru energy-matched.
+- **Section 5.** Hasil Sudoku kini dipimpin fakta per-seed (urutan bertahan di setiap seed, rentang tidak
+  tumpang tindih) dan statistik Welch menyusul, menjawab keberatan df 2,1-2,8 yang rapuh. Definisi
+  Wh-to-50% tidak diulang di tiap caption. Caption Tabel 4 merujuk Tabel A.1. Header kolom jadi
+  "Target (%)". Subbagian screen murah dipadatkan. Pembacaan iso-energi sumbu lebar ditambahkan
+  (h512 mencapai 38,02% pada 213-216 Wh lawan 503 Wh milik h256; 42,97% pada 256-274 Wh lawan 313 Wh
+  milik h768).
+- **Section 1/9.** Triad jebakan diseragamkan di abstrak, highlights, Contribution, dan Conclusion
+  (sebelumnya Contribution memakai triad berbeda). ARC diberi kualifikasi "just inside the corrected
+  threshold". Caption Tabel A.1/B.1 diramping; kolom seed 3/4 yang kosong pada baris Sudoku dinyatakan
+  kosong **by design**, bukan data hilang.
+- **Abstrak** dipangkas ke **249 kata** (sempat 262 setelah semua tambahan).
+- **Highlights**: butir Maze ditulis ulang. Versi lama "Where the metric saturates (Maze), depth buys
+  nothing" masih memakai bahasa rezim jenuh yang sudah dicabut; sekarang "On Maze the proxy metric never
+  beats copying the input, so depth cannot be judged".
+
+### Tiga koreksi yang lahir dari pengecekan ulang ke artefak
+
+1. **Plateau ARC D36.** Naskah menulis "peak at the sixth or seventh of 25 checkpoints and then hold
+   between 25,3 dan 26,8%". Dihitung ulang dari lima `progress_*d36*.jsonl`: puncak memang di checkpoint
+   6 atau 7 (28,65-33,39%), tetapi checkpoint terakhir jatuh ke **25,07-26,51%**. Angka lama adalah sisa
+   dari era n=3. Diperbaiki jadi 25,1-26,5%, dan "while the shallow cells keep moving" diganti pernyataan
+   terukur "the $D_9$ seeds peak between the tenth checkpoint and the last" (puncak D9 di checkpoint
+   10/15/19/23/25).
+2. **Statistik baseline.** Badan teks memakai $t{=}10.2$ untuk dua kontras berbeda. Dari
+   `stats_table_contrasts.csv`: D9 vs non-rekursif $t{=}+10.22$, D36 vs non-rekursif $t{=}-10.17$. Tanda
+   negatif itu penting karena kontras kedua berarti TRM terdalam **kalah**.
+3. **Crossover baseline.** "The non-recursive control leads for roughly the first 200 Wh" diverifikasi
+   dengan menggabungkan `pw_*.csv` dan `progress_*.jsonl` ke kurva akurasi-lawan-energi: baseline unggul
+   pada 140-210 Wh, lalu disusul ketika keduanya masih sekitar 45%. Kalimat disesuaikan. Pada kesempatan
+   yang sama klaim "the shallow configuration is ahead of both deeper TRM settings at every point of the
+   budget" **diverifikasi benar** pada grid 20-340 Wh (D9 di atas D18 dan D36 di setiap titik).
+
+### Lantai cross-validasi dipisah dua
+
+Threats menulis "every completed run agrees to at least 98,68%" sementara abstrak memakai 98,8%. Dicek ke
+75 baris summary: dua nilai terendah (95,89% dan 98,59%) berasal dari dua run pilot yang gagal setelah
+~31 s, dan setelah keduanya dikeluarkan lantai memang 98,68% untuk seluruh run selesai, 98,8% untuk run
+yang menopang hasil. Kedua angka kini dinyatakan bersama, bukan bersaing.
+
+### Frasa "dua instrumen" yang masih tersisa
+
+Koreksi fase BM (CodeCarbon dan `nvidia-smi` membaca sensor NVML yang sama) belum sampai ke tiga tempat:
+Section 5.7, Threats, dan surat pengantar. Ketiganya diganti jadi "two accounting paths" dengan rujukan ke
+Section 2; label `\label{sec:protocol}` ditambahkan ke Methodology untuk rujukan itu.
+
+### Figur (commit `41f6261`)
+
+Enam figur diperbaiki tanpa mengubah satu angka pun: Gbr 2 (garis acuan slope 1, warna+penanda per
+$D_{\text{eff}}$, font naik, label sumbu $P\cdot D_{\text{eff}}$), Gbr 3 (anotasi melayang jadi entri
+legenda), Gbr 4 (sumbu CO2e diberi faktor konversi, arah anotasi diseragamkan, D18/D36 dibedakan
+linestyle), Gbr 5 (checkpoint terbaik D18 ditandai), Gbr 6 (titik per-seed + error bar, encoding warna
+disamakan), Gbr 8 (label persen dinaikkan di atas error bar, akurasi target ditulis di bawah tiap
+pasangan batang). Caption Gbr 3 disesuaikan karena titik (256,18) digambar sebagai lingkaran faded yang
+melingkari kotak width-sweep, bukan digeser: menggeser akan menggambar konfigurasi yang tak pernah
+dijalankan.
+
+### Skrip analisis
+
+`analyze_BM.py` sebelumnya menghilangkan bagian A1/A2/B secara diam-diam bila summary CSV belum ada,
+sehingga laporan kosong bisa terbaca sebagai null. Sekarang tiap bagian yang datanya belum lengkap
+mencetak keterangan eksplisit. Tidak ada uji, kontras, atau ambang yang berubah, jadi pra-registrasi tetap
+utuh.
+
+### Bahan laporan akhir
+
+`lapakhir/BAHAN_perubahan_setelah_lapkemajuan.md` dibuat (commit `dfcdc2d`): tujuh butir perubahan klaim
+sesudah laporan kemajuan dikirim ke BIMA, supaya laporan akhir bisa menjelaskan selisihnya. `lapkemajuan/`
+sendiri tidak disentuh.
+
+**Status:** 48 halaman, 0 error LaTeX, 0 rujukan menggantung, satu overfull 2,61 pt (bawaan float).
+Commit: `41f6261`, `52e9194`, `48ec0b3`, `dfcdc2d`. Rantai BM masih berjalan.

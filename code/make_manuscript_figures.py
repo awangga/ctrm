@@ -25,6 +25,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 IDLE_W = 4.7           # daya idle terukur, dikurangkan spt Eq. (2) di naskah
 GRID = 0.67593         # kg CO2e/kWh, dari CodeCarbon (Indonesia), konstan di semua run
 
+# Gbr. 6 = dua panel berdampingan; ukuran fontnya dikunci lewat dua konstanta ini supaya
+# panel kiri tidak terbaca lebih kecil daripada kanan. Skala cetak diukur dari lebar PDF
+# keluaran (bukan figsize, karena bbox="tight" memangkas): textwidth elsarticle 390 pt,
+# panel kiri 0.50\linewidth / 225,7 pt = 0,864x, panel kanan 0.43\linewidth / 194,1 pt = 0,864x.
+PANEL6_TICK = 9.5      # efektif 8,21 pt
+PANEL6_LABEL = 10.0    # efektif 8,64 pt
+
 # Okabe-Ito
 OI = {"blue": "#0072B2", "orange": "#E69F00", "vermillion": "#D55E00",
       "green": "#009E73", "sky": "#56B4E9", "grey": "#555555",
@@ -59,8 +66,13 @@ def read_power(path):
 
 
 def cumulative_wh(ts, w):
-    """Energi net kumulatif (Wh) via trapesium atas (P - P_idle), Eq. (2)."""
-    net = np.clip(w - IDLE_W, 0, None)
+    """Energi net kumulatif (Wh) via trapesium atas (P - P_idle), Eq. (2).
+
+    TIDAK di-clip pada nol, supaya identik dengan run_recipe.py yang menghasilkan
+    angka energi yang dilaporkan. Sampel di bawah lantai idle mengurangi total.
+    Selisih terhadap versi ter-clip di seluruh run yang dilaporkan < 0,001%.
+    """
+    net = w - IDLE_W
     if len(ts) < 2:
         return np.zeros_like(net)
     dt = np.diff(ts)
@@ -105,11 +117,13 @@ def trajectory(tag, out_dir, metric="all/exact_accuracy"):
 def fig_energy_accuracy(out_path, data_root):
     """Lintasan energi-akurasi Sudoku h512, tiga kedalaman x tiga seed."""
     rec = os.path.join(data_root, "recipe_out")
-    specs = [(9, "b192", OI["blue"], "o"), (18, "b192", OI["orange"], "s"),
-             (36, "b96", OI["vermillion"], "^")]
+    # Linestyle membedakan D18 dan D36 juga dalam cetak hitam-putih: #E69F00 dan
+    # #D55E00 nyaris sama begitu dikonversi ke grayscale.
+    specs = [(9, "b192", OI["blue"], "o", "-"), (18, "b192", OI["orange"], "s", (0, (4.5, 1.8))),
+             (36, "b96", OI["vermillion"], "^", (0, (1.4, 1.4)))]
     fig, ax = plt.subplots(figsize=(6.6, 2.9))
     TARGET = 50.0
-    for depth, batch, colour, marker in specs:
+    for depth, batch, colour, marker, ls in specs:
         curves = []
         for seed in (0, 1, 2):
             tr = trajectory(f"h512_d{depth}_recipe_{batch}_s{seed}", rec)
@@ -122,7 +136,7 @@ def fig_energy_accuracy(out_path, data_root):
         n = min(len(c[0]) for c in curves)
         xm = np.mean([c[0][:n] for c in curves], axis=0)
         ym = np.mean([c[1][:n] for c in curves], axis=0)
-        ax.plot(xm, ym, color=colour, marker=marker, markersize=2.6, markevery=3,
+        ax.plot(xm, ym, color=colour, marker=marker, markersize=2.6, markevery=3, ls=ls,
                 label=rf"$D_{{\mathrm{{eff}}}}={depth}$", zorder=3)
         # Titik capai-target dihitung PER SEED lalu dirata-rata, konsisten dengan tabel
         # di naskah; kurva rata-rata tidak dipakai untuk ini karena seed yang tak pernah
@@ -136,24 +150,26 @@ def fig_energy_accuracy(out_path, data_root):
             mx = float(np.mean(reach))
             ax.plot(mx, TARGET, marker="*", markersize=11, color=colour,
                     markeredgecolor="white", markeredgewidth=0.6, zorder=4)
-            # Label ditaruh di bawah sumbu target dan digeser per kedalaman supaya tidak
-            # ditembus kurva tetangga; sebelumnya kurva D18 melintasi teks label D9.
-            dy = {9: 9, 18: -18, 36: -18}.get(depth, -18)
-            dx = {9: -78, 18: 6, 36: 6}.get(depth, 6)
+            # Arah offset diseragamkan (kanan-bawah bintang) supaya mata tidak perlu
+            # menebak label mana milik bintang mana; jarak vertikalnya saja yang beda
+            # agar teks tidak ditembus kurva tetangga.
             ax.annotate(f"{mx:.0f} Wh ({len(reach)}/{len(curves)})", (mx, TARGET),
-                        textcoords="offset points", xytext=(dx, dy), fontsize=7.5, color=colour,
-                        bbox=dict(boxstyle="round,pad=0.16", fc="white", ec="none", alpha=0.85))
+                        textcoords="offset points", xytext=(9, {9: -21}.get(depth, -13)),
+                        fontsize=8, color=colour,
+                        bbox=dict(boxstyle="round,pad=0.16", fc="white", ec="none", alpha=0.92))
     ax.axhline(TARGET, color=OI["grey"], ls=":", lw=0.9, zorder=0)
-    ax.annotate("target 50% exact", (ax.get_xlim()[1], TARGET), textcoords="offset points",
-                xytext=(-4, 4), ha="right", fontsize=7.5, color=OI["grey"])
+    # Teks target dipindah ke ruang kosong di atas garis putus-putus (sebelum kurva mana
+    # pun memotongnya) supaya tidak berdesakan dengan bintang capai-target.
+    ax.annotate("target 50% exact", (0.30 * ax.get_xlim()[1], TARGET), textcoords="offset points",
+                xytext=(0, 5), ha="left", fontsize=8, color=OI["grey"])
     ax.set_xlabel("Cumulative net GPU energy (Wh)")
     ax.set_ylabel("Exact accuracy (\\%)" if False else "Exact accuracy (%)")
     ax.set_ylim(bottom=0)
     ax.legend(frameon=False, loc="upper left", handlelength=1.6)
     sec = ax.secondary_xaxis("top", functions=(lambda wh: wh / 1000 * GRID * 1000,
                                                lambda g: g / (GRID * 1000) * 1000))
-    sec.set_xlabel("Cumulative CO$_2$e (g)", fontsize=8)
-    sec.tick_params(labelsize=7.5)
+    sec.set_xlabel(f"Cumulative CO$_2$e (g), at {GRID * 1000:.1f} g/kWh", fontsize=8.5)
+    sec.tick_params(labelsize=8)
     fig.savefig(out_path)
     plt.close(fig)
     print(f"  tulis {out_path}")
@@ -162,14 +178,15 @@ def fig_energy_accuracy(out_path, data_root):
 def fig_cost_model(out_path, data_root):
     """Cost-model energi per langkah dari microbench hardware, log-log + CI bootstrap."""
     csv_path = os.path.join(data_root, "microbench_results.csv")
-    P, J = [], []
+    P, J, Dv = [], [], []
     for r in csv.DictReader(open(csv_path)):
         try:
             P.append(float(r["params_M"]) * float(r["D_eff"]))
             J.append(float(r["J_per_step"]))
+            Dv.append(int(float(r["D_eff"])))
         except (KeyError, ValueError):
             continue
-    P, J = np.array(P), np.array(J)
+    P, J, Dv = np.array(P), np.array(J), np.array(Dv)
     lx, ly = np.log(P), np.log(J)
     b, la = np.polyfit(lx, ly, 1)
     pred = la + b * lx
@@ -192,15 +209,36 @@ def fig_cost_model(out_path, data_root):
     fig, ax = plt.subplots(figsize=(3.3, 2.7))
     xs = np.linspace(lx.min(), lx.max(), 100)
     ax.fill_between(np.exp(xs), np.exp(la + lo * xs), np.exp(la + hi * xs),
-                    color=OI["blue"], alpha=0.13, lw=0)
-    ax.plot(np.exp(xs), np.exp(la + b * xs), color=OI["blue"], lw=1.2)
-    ax.scatter(P, J, s=18, color=OI["vermillion"], zorder=3, edgecolor="white", linewidth=0.4)
+                    color="0.55", alpha=0.16, lw=0)
+    ax.plot(np.exp(xs), np.exp(la + b * xs), color="0.2", lw=1.2, zorder=2,
+            label=rf"fit, $b={b:.2f}$")
+    # Acuan kemiringan 1 diikat ke titik terkecil: tanpa garis ini sub-linearitas
+    # (b < 1) tidak terlihat pada sumbu log-log, karena mata tak punya pembanding.
+    i0 = int(np.argmin(P))
+    ax.plot(np.exp(xs), J[i0] * np.exp(xs) / P[i0], ls=(0, (4, 2)), color="0.55", lw=1.0,
+            zorder=2, label="slope 1 (linear)")
+    # Warna+penanda per D_eff: 14 titik itu grid 5 lebar x 3 kedalaman, dan tanpa
+    # pembedaan ini beberapa titik terbaca saling tindih. Palet sama dgn Gbr. 4-5.
+    dcol = {9: OI["blue"], 18: OI["orange"], 36: OI["vermillion"]}
+    dmark = {9: "o", 18: "s", 36: "^"}
+    for d in (9, 18, 36):
+        sel = Dv == d
+        if not sel.any():
+            continue
+        ax.scatter(P[sel], J[sel], s=20, color=dcol[d], marker=dmark[d], zorder=4,
+                   edgecolor="white", linewidth=0.4,
+                   label=rf"$D_{{\mathrm{{eff}}}}{{=}}{d}$")
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel(r"params (M) $\times\ D_{\mathrm{eff}}$")
+    ax.set_xlabel(r"$P \cdot D_{\mathrm{eff}}$ (M)")
     ax.set_ylabel("Energy per step (J)")
-    ax.text(0.04, 0.94, f"$b={b:.2f}$ [{lo:.2f}, {hi:.2f}]\n$R^2={r2:.2f}$, $n={len(P)}$",
-            transform=ax.transAxes, va="top", fontsize=7.5)
+    ax.tick_params(labelsize=9)
+    ax.text(0.04, 0.96, f"$b={b:.2f}$ [{lo:.2f}, {hi:.2f}]\n$R^2={r2:.2f}$, $n={len(P)}$",
+            transform=ax.transAxes, va="top", fontsize=8.5)
+    # Legenda 8.5 pt: figur ini dicetak pada 0,82x (0.5\linewidth elsarticle preprint),
+    # jadi apa pun di bawah 8.5 pt jatuh di bawah ambang 7 pt Elsevier.
+    ax.legend(frameon=False, fontsize=8.5, loc="lower right", handlelength=1.4,
+              handletextpad=0.45, labelspacing=0.22, borderpad=0.1)
     fig.savefig(out_path)
     plt.close(fig)
     print(f"  tulis {out_path}  (b={b:.3f} CI[{lo:.2f},{hi:.2f}] R2={r2:.3f})")
@@ -398,14 +436,16 @@ def fig_crosstask(out_path, data_root):
     """Efek kedalaman di tiga task, memakai SELURUH seed yang tersedia per task."""
     import collections
     import statistics as _st
+    # Fase BM: tiap panel menampilkan garis baseline sepele metriknya (trivial_baselines.py),
+    # karena tanpa garis itu panel Maze menyesatkan: seluruh rentangnya ada DI BAWAH 87,51%.
     src = [("Sudoku-Extreme", "recipe_out/recipe_summary.csv", "best_exact_pct",
-            "Exact accuracy (%)", ("h512_d9_recipe", "h512_d18_recipe", "h512_d36_recipe")),
+            "Exact accuracy (%)", ("h512_d9_recipe", "h512_d18_recipe", "h512_d36_recipe"), 0.0),
            ("ARC-AGI-1", "arc_depth_out/recipe_summary.csv", "best_token_pct",
-            "Token accuracy (%)", ("h256_d9_recipe", "h256_d18_recipe", "h256_d36_recipe")),
+            "Token accuracy (%)", ("h256_d9_recipe", "h256_d18_recipe", "h256_d36_recipe"), 25.0),
            ("Maze-Hard", "maze_depth_out/recipe_summary.csv", "best_token_pct",
-            "Token accuracy (%)", ("h256_d9_recipe", "h256_d18_recipe", "h256_d36_recipe"))]
+            "Token accuracy (%)", ("h256_d9_recipe", "h256_d18_recipe", "h256_d36_recipe"), 87.51)]
     fig, axes = plt.subplots(1, 3, figsize=(6.6, 2.5))
-    for ax, (task, rel, col, ylab, prefixes) in zip(axes, src):
+    for ax, (task, rel, col, ylab, prefixes, base) in zip(axes, src):
         path = os.path.join(data_root, rel)
         if not os.path.exists(path):
             continue
@@ -428,6 +468,13 @@ def fig_crosstask(out_path, data_root):
         ax.set_ylabel(ylab, fontsize=8)
         ax.set_title(f"{task}  ($n{{=}}{n}$)", fontsize=8.5)
         ax.margins(x=0.22, y=0.18)
+        lo, hi = ax.get_ylim()
+        allv = [v for d in xs for v in vals[d]]
+        if base > min(allv) - 50:                       # baseline dekat/di dalam rentang data
+            ax.set_ylim(min(lo, base - 0.45 * (hi - lo)), max(hi, base + 0.18 * (hi - lo)))
+            ax.axhline(base, color=OI["vermillion"], ls="--", lw=1.0, zorder=1)
+            ax.text(0.98, base, f"trivial baseline {base:g}%", transform=ax.get_yaxis_transform(),
+                    ha="right", va="bottom", fontsize=6.8, color=OI["vermillion"])
     fig.tight_layout(w_pad=1.4)
     fig.savefig(out_path)
     plt.close(fig)
@@ -442,10 +489,10 @@ def fig_learning(out_path, data_root):
     bekerja (D9 menjalankan dua kali lipat langkah D18/D36).
     """
     rec = os.path.join(data_root, "recipe_out")
-    specs = [(9, "b192", OI["blue"], "o"), (18, "b192", OI["orange"], "s"),
-             (36, "b96", OI["vermillion"], "^")]
+    specs = [(9, "b192", OI["blue"], "o", "-"), (18, "b192", OI["orange"], "s", (0, (4.5, 1.8))),
+             (36, "b96", OI["vermillion"], "^", (0, (1.4, 1.4)))]
     fig, ax = plt.subplots(figsize=(6.6, 2.7))
-    for depth, batch, colour, marker in specs:
+    for depth, batch, colour, marker, ls in specs:
         curves = []
         for seed in (0, 1, 2):
             pg = os.path.join(rec, f"progress_h512_d{depth}_recipe_{batch}_s{seed}.jsonl")
@@ -463,8 +510,19 @@ def fig_learning(out_path, data_root):
         n = min(len(c[0]) for c in curves)
         xm = curves[0][0][:n]
         ym = np.mean([c[1][:n] for c in curves], axis=0)
-        ax.plot(xm, ym, color=colour, marker=marker, markersize=2.6, markevery=3,
+        ax.plot(xm, ym, color=colour, marker=marker, markersize=2.6, markevery=3, ls=ls,
                 label=rf"$D_{{\mathrm{{eff}}}}={depth}$ ({xm[-1]/1000:.0f}k steps)", zorder=3)
+        if depth == 18:
+            # Checkpoint terbaik per seed ditandai: angka yang dibahas caption berasal
+            # dari puncak tiap seed, bukan dari puncak kurva rata-rata, dan tanpa
+            # penanda ini pembaca tak bisa menemukannya di figur.
+            bx = [float(cx[int(np.argmax(cy))]) for cx, cy in curves]
+            by = [float(np.max(cy)) for cx, cy in curves]
+            ax.plot(bx, by, "*", ms=8.5, mfc=colour, mec="white", mew=0.6, ls="", zorder=5)
+            ax.annotate(rf"best checkpoints, mean {np.mean(by):.1f}\%".replace("\\%", "%"),
+                        (float(np.mean(bx)), float(np.max(by))), textcoords="offset points",
+                        xytext=(6, 7), fontsize=8, color=colour,
+                        bbox=dict(boxstyle="round,pad=0.16", fc="white", ec="none", alpha=0.9))
     ax.set_xlabel("Optimizer step")
     ax.set_ylabel("Exact accuracy (%)")
     ax.set_ylim(bottom=0)
@@ -480,7 +538,7 @@ def fig_iso_accuracy(out_path, data_root):
     rec = os.path.join(data_root, "recipe_out")
     rivals = [(r"$D_{\mathrm{eff}}{=}36$", 36.26, 340.4), (r"$D_{\mathrm{eff}}{=}18$", 50.07, 358.0),
               ("non-recursive", 49.67, 384.0)]
-    labels, rival_wh, d9_wh, d9_sd = [], [], [], []
+    labels, rival_wh, d9_wh, d9_sd, targets = [], [], [], [], []
     for name, target, rwh in rivals:
         per = []
         for seed in (0, 1, 2):
@@ -494,22 +552,27 @@ def fig_iso_accuracy(out_path, data_root):
         if not per:
             continue
         labels.append(name)
+        targets.append(target)
         rival_wh.append(rwh)
         d9_wh.append(_st.mean(per))
         d9_sd.append(_st.stdev(per) if len(per) > 1 else 0.0)
     idx = np.arange(len(labels))
-    fig, ax = plt.subplots(figsize=(3.5, 2.7))
+    fig, ax = plt.subplots(figsize=(3.5, 2.9))
     ax.bar(idx - 0.19, rival_wh, 0.36, color=OI["grey"], label="rival, full budget")
     ax.bar(idx + 0.19, d9_wh, 0.36, yerr=d9_sd, capsize=3, color=OI["blue"],
            label=r"$D_{\mathrm{eff}}{=}9$ to match")
-    for i, (r, d) in enumerate(zip(rival_wh, d9_wh)):
-        ax.text(i + 0.19, d + 14, f"\u2212{100*(r-d)/r:.0f}%", ha="center", fontsize=8.5,
+    # Label persen ditaruh DI ATAS ujung error bar: dengan offset tetap 14 Wh ia
+    # ditembus error bar yang s.d.-nya mencapai 19 Wh.
+    for i, (r, d, s) in enumerate(zip(rival_wh, d9_wh, d9_sd)):
+        ax.text(i + 0.19, d + s + 13, f"\u2212{100*(r-d)/r:.0f}%", ha="center", fontsize=8.5,
                 color=OI["blue"], fontweight="bold")
     ax.set_xticks(idx)
-    ax.set_xticklabels(labels, fontsize=8)
+    # Akurasi target ikut dicetak: angka inilah yang mendefinisikan arti "matched".
+    ax.set_xticklabels([f"{n}\nmatch {t:.1f}%" for n, t in zip(labels, targets)], fontsize=8.6)
     ax.set_ylabel("Net energy (Wh)")
+    ax.tick_params(axis="y", labelsize=8.6)
     ax.set_ylim(0, max(rival_wh) * 1.30)
-    ax.legend(frameon=False, fontsize=7.5, loc="upper left")
+    ax.legend(frameon=False, fontsize=8.2, loc="upper left")
     fig.savefig(out_path)
     plt.close(fig)
     print(f"  tulis {out_path}")
@@ -612,16 +675,17 @@ def fig_regime_map(out_path, data_root):
             if filt(r):
                 groups.setdefault(r["D_eff"], []).append(float(r[col]))
         means = {k: float(np.mean(v)) for k, v in groups.items()}
-        axL.plot([0, 100], [y, y], color="0.88", lw=5, solid_capstyle="butt", zorder=1)
-        # baseline sepele
-        axL.plot([base, base], [y - 0.28, y + 0.28], color="0.35", lw=1.4, zorder=4)
-        lx, ha = (base + 2, "left") if base < 6 else (base, "center")
-        axL.text(lx, y + 0.30, "trivial\nbaseline", ha=ha, va="bottom", fontsize=6.6,
-                 color="0.35", linespacing=0.95)
+        # Fase BM: sumbu kiri adalah JARAK ke baseline sepele, bukan akurasi absolut. Pada skala
+        # absolut 0-100% jarak Maze (-1 poin) tak terlihat, sehingga pesan utama figur hilang.
+        axL.plot([-6, 70], [y, y], color="0.88", lw=5, solid_capstyle="butt", zorder=1)
         for k in ("9", "18", "36"):
-            axL.errorbar(means[k], y, xerr=np.std(groups[k], ddof=1), fmt=marks[k], ms=4.4,
+            axL.errorbar(means[k] - base, y, xerr=np.std(groups[k], ddof=1), fmt=marks[k], ms=4.4,
                          color=shades[status], ecolor=shades[status], elinewidth=1, capsize=2,
                          zorder=3, mfc="white" if status == "at floor" else shades[status])
+        lo_d = min(means[k] - base for k in ("9", "18", "36"))
+        hi_d = max(means[k] - base for k in ("9", "18", "36"))
+        axL.annotate(f"{lo_d:+.1f} to {hi_d:+.1f}", (hi_d, y), textcoords="offset points",
+                     xytext=(8, -2), fontsize=7.4, color=shades[status], va="center")
         d9, d36 = groups["9"], groups["36"]
         t, df, pval, _ = welch(d36, d9)
         diff = means["36"] - means["9"]
@@ -629,14 +693,17 @@ def fig_regime_map(out_path, data_root):
         sig = pval < 0.05 / 3
         axR.errorbar(diff, y, xerr=ci, fmt="D", ms=5, color=shades[status], ecolor=shades[status],
                      elinewidth=1.3, capsize=3, mfc=shades[status] if sig else "white", zorder=3)
-        axR.text(diff, y - 0.34, (f"{diff:+.1f}" + ("" if sig else " n.s.")), ha="center",
+        axR.text(diff - 1.2, y - 0.34, (f"{diff:+.1f}" + ("" if sig else " n.s.")), ha="right",
                  fontsize=8.6, color=shades[status])
         ylabels.append((y, f"{task}\n({metric}), {status}"))
-    axL.set_xlim(0, 108)
+    axL.axvline(0, color=OI["vermillion"], lw=1.1, zorder=2)
+    axL.text(0, len(specs) - 0.5, "trivial baseline", rotation=90, ha="right", va="top",
+             fontsize=6.8, color=OI["vermillion"])
+    axL.set_xlim(-6, 82)
     axL.set_ylim(-0.75, len(specs) - 0.35)
     axL.set_yticks([y for y, _ in ylabels])
     axL.set_yticklabels([lab for _, lab in ylabels], fontsize=8.2)
-    axL.set_xlabel("Accuracy on the 512-instance subset (%)")
+    axL.set_xlabel("Distance from the trivial baseline (points)")
     axR.axvline(0, color="0.45", lw=0.9, zorder=2)
     axR.set_xlabel(r"Depth effect, $D_{36}-D_9$ (points)")
     axR.set_xlim(-33, 12)
@@ -664,7 +731,7 @@ def fig_protocol(out_path):
     ax.set_ylim(-2, 47)
     ax.axis("off")
 
-    def box(x, y, w, h, lines, fc="white", ec="0.35", fs=6.3, mono=False):
+    def box(x, y, w, h, lines, fc="white", ec="0.35", fs=7.6, mono=False):
         ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.6,rounding_size=1.2",
                                     fc=fc, ec=ec, lw=0.9, zorder=2))
         ax.text(x + w / 2, y + h / 2, "\n".join(lines), ha="center", va="center",
@@ -679,22 +746,22 @@ def fig_protocol(out_path):
                         r"$P \times D_\mathrm{eff} \times$ steps", "held fixed"])
     box(24.5, 19, 22, 12, ["Train, one GPU", "fixed thermal env.", "eval schedule pinned",
                            "to a 512-puzzle subset"])
-    box(50, 33, 15, 10, ["nvidia-smi", "power.draw, 1 Hz"], fc="#EAF2FA")
-    box(50, 5, 15, 10, ["CodeCarbon", "NVML energy"], fc="#EAF2FA")
+    box(48, 33, 20, 10, ["nvidia-smi", "power.draw, 1 Hz"], fc="#EAF2FA")
+    box(48, 5, 20, 10, ["CodeCarbon", "NVML energy"], fc="#EAF2FA")
     box(68.5, 19, 20, 12, ["idle subtraction", "4.7 W constant", "cross-validate:",
                            "agree 98.8-99.95%"])
     box(91.5, 19, 12.5, 12, ["Joules to", "target", "accuracy"], fc="#FDF0E3")
 
     arrow(21.3, 25, 24.2, 25)
-    arrow(46.8, 27.6, 49.7, 35.0)
-    arrow(46.8, 22.4, 49.7, 13.0)
-    arrow(65.3, 36.0, 68.2, 27.6)
-    arrow(65.3, 12.0, 68.2, 22.4)
+    arrow(46.8, 27.6, 47.7, 35.0)
+    arrow(46.8, 22.4, 47.7, 13.0)
+    arrow(68.3, 36.0, 68.4, 27.6)
+    arrow(68.3, 12.0, 68.4, 22.4)
     arrow(88.8, 25, 91.2, 25)
 
-    arrow(78, 18.3, 78, 3.6, color=OI["vermillion"], ls=(0, (2.5, 1.6)))
+    arrow(33, 18.3, 33, 3.6, color="0.45", ls=(0, (2.5, 1.6)))
     ax.text(50, 1.2, "rejected: wall time < 120 s (aborted / OOM) or incomplete budget",
-            ha="center", va="bottom", fontsize=7.6, color=OI["vermillion"], style="italic")
+            ha="center", va="bottom", fontsize=8.4, color="0.45", style="italic")
     fig.savefig(out_path)
     plt.close(fig)
     print(f"  tulis {out_path}")
@@ -707,24 +774,47 @@ def fig_sudoku_frontier(out_path, data_root):
     panel pertama fig_crosstask_depth: data dan bentuk plotnya sama persis.
     """
     rec = os.path.join(data_root, "recipe_out")
+    # Encoding kedalaman disamakan dengan Gbr. 4-5 (biru/oranye/vermillion, o/s/^);
+    # kotak hitam-putih yang lama tak bisa dihubungkan pembaca ke figur tetangga.
+    style = {9: (OI["blue"], "o"), 18: (OI["orange"], "s"), 36: (OI["vermillion"], "^")}
     pts = []
     for depth, batch in ((9, "b192"), (18, "b192"), (36, "b96")):
         acc, wh = [], []
         for r in csv.DictReader(open(os.path.join(rec, "recipe_summary.csv"))):
             if r["hidden"] == "512" and r["D_eff"] == str(depth) and "recipe" in r["tag"]:
                 acc.append(float(r["best_exact_pct"])); wh.append(float(r["smi_net_Wh"]))
-        pts.append((depth, float(np.mean(wh)), float(np.mean(acc))))
+        pts.append((depth, float(np.mean(wh)), float(np.mean(acc)),
+                    float(np.std(wh, ddof=1)) if len(wh) > 1 else 0.0,
+                    float(np.std(acc, ddof=1)) if len(acc) > 1 else 0.0, wh, acc))
     fig, ax = plt.subplots(figsize=(3.4, 2.6))
     xs = [p[1] for p in pts]; ys = [p[2] for p in pts]
-    ax.plot(xs, ys, "-", color="0.25", lw=1.4, zorder=1)
-    for d, x, y in pts:
-        ax.plot(x, y, "s", ms=6, mfc="white", mec="0.15", mew=1.2, zorder=3)
-        off = (-30, -14) if d == 9 else (8, -4)
-        ax.annotate(rf"$D_{{{d}}}$", (x, y), textcoords="offset points", xytext=off, fontsize=8.5)
-    ax.set_xlabel("Net training energy (Wh)")
-    ax.set_ylabel("Exact accuracy (%)")
-    ax.set_xlim(min(xs) - 12, max(xs) + 12)
-    ax.set_ylim(min(ys) - 4, max(ys) + 5)
+    ax.plot(xs, ys, "-", color="0.35", lw=1.2, zorder=1)
+    for d, x, y, sx, sy, whs, accs in pts:
+        col, mk = style[d]
+        # Titik per seed + error bar: rata-rata saja membuang sebaran yang justru
+        # menentukan apakah jarak antar kedalaman berarti.
+        ax.scatter(whs, accs, s=11, color=col, alpha=0.40, marker=mk, zorder=2, linewidth=0)
+        ax.errorbar(x, y, xerr=sx, yerr=sy, fmt=mk, ms=6, mfc="white", mec=col, mew=1.3,
+                    color=col, ecolor=col, elinewidth=1.0, capsize=2.5, zorder=3)
+        # D36 duduk paling bawah: labelnya digeser ke kanan-bawah supaya tidak menimpa
+        # cap error bar horizontalnya (yang lebarnya s.d. energi).
+        off = {9: (-30, -14), 36: (12, -13)}.get(d, (9, -3))
+        ax.annotate(rf"$D_{{{d}}}$", (x, y), textcoords="offset points", xytext=off,
+                    fontsize=PANEL6_TICK, color=col)
+    # Font dinaikkan lewat konstanta PANEL6_*: pada tick 8 pt lama, hasil cetaknya hanya
+    # 6,9 pt, di bawah ambang 7 pt Elsevier.
+    ax.set_xlabel("Net training energy (Wh)", fontsize=PANEL6_LABEL)
+    ax.set_ylabel("Exact accuracy (%)", fontsize=PANEL6_LABEL)
+    ax.tick_params(labelsize=PANEL6_TICK)
+    allx = [v for p in pts for v in p[5]]; ally = [v for p in pts for v in p[6]]
+    ax.set_xlim(min(allx) - 14, max(allx) + 14)
+    # Batas y memperhitungkan ujung error bar, bukan hanya titik seed, lalu diberi
+    # padding bawah: tanpa itu titik D36 dan cap-nya menempel garis sumbu. 11% dipakai
+    # (bukan 8%) karena label $D_{36}$ digantung 13 pt di bawah titiknya.
+    ylo = min(min(ally), min(p[2] - p[4] for p in pts))
+    yhi = max(max(ally), max(p[2] + p[4] for p in pts))
+    span = yhi - ylo
+    ax.set_ylim(ylo - 0.11 * span, yhi + 0.06 * span)
     ax.grid(alpha=0.25, lw=0.5)
     fig.savefig(out_path); plt.close(fig)
     print(f"  tulis {out_path}")
@@ -740,12 +830,16 @@ def fig_width_optimum(out_path, data_root):
     hs = sorted(g)
     m = [float(np.mean(g[h])) for h in hs]
     sd = [float(np.std(g[h], ddof=1)) for h in hs]
-    fig, ax = plt.subplots(figsize=(2.9, 2.6))
+    # Lebar disetel 2,671 in supaya lebar PDF keluaran (setelah bbox="tight") berbanding
+    # 0.43/0.50 terhadap panel kiri: dengan begitu kedua panel Gbr. 6 menyusut pada skala
+    # cetak yang sama (0,864x) dan fontnya terbaca sama besar, bukan kiri lebih kecil.
+    fig, ax = plt.subplots(figsize=(2.671, 2.6))
     ax.errorbar(range(len(hs)), m, yerr=sd, fmt="D-", ms=5.5, mfc="white",
                 color=OI["reddish"], ecolor=OI["reddish"], capsize=3, lw=1.3, mew=1.2)
     ax.set_xticks(range(len(hs))); ax.set_xticklabels([str(h) for h in hs])
-    ax.set_xlabel("hidden size $h$")
-    ax.set_ylabel("Exact accuracy (%)")
+    ax.tick_params(labelsize=PANEL6_TICK)
+    ax.set_xlabel("hidden size $h$", fontsize=PANEL6_LABEL)
+    ax.set_ylabel("Exact accuracy (%)", fontsize=PANEL6_LABEL)
     ax.set_xlim(-0.35, len(hs) - 0.65)
     ax.grid(alpha=0.25, lw=0.5)
     fig.savefig(out_path); plt.close(fig)
@@ -763,10 +857,13 @@ def fig_design_plane(out_path, data_root):
             label=r"width sweep ($D_{\mathrm{eff}}{=}18$)", zorder=3)
     ax.plot([512], [1], "^", ms=9, mfc="none", mec="0.15", mew=1.6,
             label="non-recursive baseline", zorder=3)
-    ax.plot([256], [9], "o", ms=8, mfc="none", mec=OI["blue"], mew=1.6, alpha=0.45, zorder=2)
-    ax.plot([256], [36], "o", ms=8, mfc="none", mec=OI["blue"], mew=1.6, alpha=0.45, zorder=2)
-    ax.plot([256, 256, 256], [9, 18, 36], "-", color="0.75", lw=0.9, ls=(0, (3, 2)), zorder=1)
-    ax.text(600, 1.15, "faded: Maze and ARC\ndepth sweep ($h{=}256$)", fontsize=7.2, color="0.45")
+    ax.plot([256, 256], [9, 36], "o", ms=8, mfc="none", mec=OI["blue"], mew=1.6, alpha=0.45,
+            zorder=2, label=r"Maze and ARC depth sweep ($h{=}256$)")
+    # Titik (256,18) dipakai bersama dengan sapuan lebar. Alih-alih menggesernya ke
+    # posisi h yang tidak pernah dijalankan, ia digambar sebagai lingkaran lebih besar
+    # yang MELINGKARI kotak sapuan lebar: keduanya terbaca, datanya tetap di tempat.
+    ax.plot([256], [18], "o", ms=13, mfc="none", mec=OI["blue"], mew=1.6, alpha=0.45, zorder=2)
+    ax.plot([256, 256, 256], [9, 18, 36], color="0.75", lw=0.9, ls=(0, (3, 2)), zorder=1)
     ax.set_yscale("log"); ax.set_yticks([1, 9, 18, 36])
     ax.set_yticklabels(["1", "9", "18", "36"])
     ax.set_xticks([256, 512, 768])
@@ -776,7 +873,7 @@ def fig_design_plane(out_path, data_root):
     ax.grid(alpha=0.25, lw=0.5)
     # Legenda ditaruh di luar kanan-atas area data: di dalam plot ia selalu
     # bertabrakan, entah dgn titik D=36, penanda baseline, atau titik D=9.
-    ax.legend(frameon=False, fontsize=7.2, loc="upper left", bbox_to_anchor=(0.015, 0.46),
+    ax.legend(frameon=False, fontsize=7.2, loc="upper left", bbox_to_anchor=(0.015, 0.52),
               handletextpad=0.4, borderpad=0.2, labelspacing=0.35)
     fig.savefig(out_path); plt.close(fig)
     print(f"  tulis {out_path}")
