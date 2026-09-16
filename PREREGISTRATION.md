@@ -1,16 +1,37 @@
 # Pre-registration records
 
-These are the pre-registration entries for the two seed extensions reported in the manuscript, copied
-verbatim from the working journal `eksperimen/frontier/EXPERIMENT_LOG.md` of the private working
-repository, together with the commit that carried them. They were written and committed **before** the
-corresponding runs were launched; the manuscript reports the outcomes whatever they turned out to be.
-The entries are in Indonesian, the language of the working journal.
+Every batch of runs added after the first grids was pre-registered before it was launched: the run
+count, the contrast it targeted and the commitment to report whatever came out were written down and
+committed first, and the analysis was run once, after the last run finished. Three such batches exist.
 
-- Maze-Hard, three seeds to five: phase AF/AN of the journal.
-- ARC-AGI-1, three seeds to five: phase AW of the journal, commit `6ad7c3b` (see below).
+- **ARC-AGI-1, three seeds to five** (phase AW of the working journal, commit `6ad7c3b`). Reproduced
+  **verbatim below**, in Indonesian, the language of the journal. Outcome reported in the manuscript and
+  in `README.md`: D9 leads D36 by 5.7 token points, Welch p = 0.012, which clears the Bonferroni
+  threshold of 0.0167.
+- **Maze-Hard, three seeds to five** (phases AF and AG of the journal: AF fixes the six runs and the
+  commitment, AG reports the outcome). Not reproduced here, because the entry is written in the
+  superseded framing this package no longer uses, and because the accuracy outcome it targeted has since
+  been withdrawn: `code/trivial_baselines.py` showed that copying the input scores 87.51% token accuracy
+  on the same 512-instance subset while every trained Maze configuration reaches 86.5-86.8%, so the Maze
+  grid is now reported as a **null measurement** and contributes only its energy comparison. The
+  pre-registered commitment is what forces that correction to be reported rather than quietly dropped.
+- **Phase BM, 18 runs** answering the reviewer requests that need GPU time (deepest cell rerun with
+  gradient accumulation, non-recursive control on ARC-AGI-1, per-instance evaluation logging):
+  `prereg_BM.md` in this package, with amendment 1, both written before any run was launched. The batch
+  was **still running** when this version was assembled, so it has no outcome to report here.
 
-The full journal, including every phase from A to the present, ships in this package as
-`EXPERIMENT_LOG.md`.
+The working journal itself (`eksperimen/frontier/EXPERIMENT_LOG.md`, every phase from A onward) is an
+internal laboratory notebook of the private working repository and is not redistributed; the entries
+that bind a reported result are the ones above.
+
+**Editorial note (September 2026).** The entry below is reproduced verbatim as it was committed, so it
+still uses the framing that was current when it was written, including the phrase "regime map" and the
+expectation that ARC-AGI-1 would become a third regime. That framing was later retracted: a
+trivial-baseline check showed that the Maze-Hard token metric never clears a copy-the-input predictor,
+so the manuscript reports two measured tasks and one null measurement rather than a map of regimes.
+What the entry fixes, the six runs, their configuration and the commitment to report any outcome, is
+what binds; its motivating language does not. Pre-registrations are left unedited on
+purpose: one that is rewritten after the fact is worthless.
 
 ---
 
@@ -83,5 +104,3 @@ Mulai 17:58:52 WIB, perkiraan rampung ~11 jam kemudian.
 (b) Preflight daya GPU ternyata berguna untuk hal yang tak dirancangnya: 152 W saat seharusnya idle
 adalah sinyal ada run lain. (c) Aturan `<120 s` tidak menangkap run terpotong yang lebih panjang;
 kontaminasi tetap perlu pemeriksaan manual.
-
----

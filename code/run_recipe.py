@@ -21,7 +21,12 @@ STEPS = int(os.environ.get("STEPS", "25000")); NEVAL = int(os.environ.get("NEVAL
 BATCH = int(os.environ.get("BATCH", "192")); SEED = int(os.environ.get("SEED", "0"))
 EMA = os.environ.get("EMA", "True"); GROUPS = int(os.environ.get("GROUPS", "1000")); IDLE_W = 4.7
 ARCH = os.environ.get("ARCH", "trm")   # 'trm' (recursive) atau 'transformers_baseline' (non-recursive)
-SPE = max(1.0, GROUPS / BATCH)                       # steps per epoch ~ groups/batch
+# Fase BM: ACCUM>1 menjalankan ACCUM micro-batch per langkah optimizer (patch
+# patch_pretrain_accum_preds.py). BATCH tetap ukuran micro-batch yang dimuat GPU; batch
+# EFEKTIF per langkah optimizer = BATCH*ACCUM, dan itulah yang menentukan langkah/epoch.
+ACCUM = int(os.environ.get("ACCUM", "1")); EFF_BATCH = BATCH * ACCUM
+SAVE_PREDS = os.environ.get("SAVE_PREDS", "")       # dir untuk npz akurasi per-instance
+SPE = max(1.0, GROUPS / EFF_BATCH)                   # langkah optimizer per epoch
 EPOCHS = max(NEVAL, round(STEPS / SPE)); EI = max(1, EPOCHS // NEVAL); EPOCHS = EI * NEVAL
 
 
@@ -60,10 +65,13 @@ def main():
     pw = os.path.join(OUT, f"pw_{tag}.csv"); logf = os.path.join(OUT, f"log_{tag}.txt")
     emcsv = os.path.join(OUT, f"emissions_{tag}.csv")
     if os.path.exists(emcsv): os.remove(emcsv)
-    print(f"RECIPE [{tag}] hidden={HIDDEN} D={DEPTH} batch={BATCH} ema={EMA} "
+    print(f"RECIPE [{tag}] hidden={HIDDEN} D={DEPTH} batch={BATCH}x{ACCUM}={EFF_BATCH} ema={EMA} "
           f"epochs={EPOCHS} (~{int(EPOCHS*SPE)} steps) ei={EI} data={DATA}", flush=True)
     env = dict(os.environ, WANDB_MODE="disabled", WANDB_SILENT="true", HYDRA_FULL_ERROR="1",
-               PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True", TRM_PROGRESS_LOG=pj)
+               PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True", TRM_PROGRESS_LOG=pj,
+               TRM_ACCUM=str(ACCUM), TRM_RUN_TAG=tag)
+    if SAVE_PREDS:
+        env["TRM_EVAL_PREDS"] = SAVE_PREDS
     from codecarbon import OfflineEmissionsTracker
     tracker = OfflineEmissionsTracker(country_iso_code="IDN", measure_power_secs=5, log_level="error",
                                       save_to_file=True, output_dir=OUT, output_file=os.path.basename(emcsv),
@@ -105,9 +113,9 @@ def main():
         best = max(best, r.get("all/exact_accuracy", 0)*100); best_tok = max(best_tok, r.get("all/accuracy", 0)*100); last = r
     smi = integrate_pw(pw); cc = cc_gpu_wh(emcsv)
     sp = os.path.join(OUT, "recipe_summary.csv")
-    fields = ["tag","hidden","D_eff","batch","ema","steps_target","wall_s","best_exact_pct",
+    fields = ["tag","hidden","D_eff","batch","accum","eff_batch","ema","steps_target","wall_s","best_exact_pct",
               "final_exact_pct","final_token_pct","best_token_pct","smi_net_Wh","cc_gpu_Wh","gross_agree_pct"]
-    rec = {"tag":tag,"hidden":HIDDEN,"D_eff":DEPTH,"batch":BATCH,"ema":EMA,"steps_target":STEPS,
+    rec = {"tag":tag,"hidden":HIDDEN,"D_eff":DEPTH,"batch":BATCH,"accum":ACCUM,"eff_batch":EFF_BATCH,"ema":EMA,"steps_target":STEPS,
            "wall_s":round(wall,1),"best_exact_pct":round(best,4),
            "final_exact_pct":round((last or {}).get("all/exact_accuracy",0)*100,4),
            "final_token_pct":round((last or {}).get("all/accuracy",0)*100,4),

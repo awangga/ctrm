@@ -1,13 +1,27 @@
-# ctrm — a cross-task regime map for tiny recursive models
+# Reproducibility package: the energy cost of recursion depth in tiny recursive models
 
-Code and analysis for the manuscript *"The energy cost of recursion depth in tiny recursive models"* (target:
+Reproducibility artifact for the manuscript *"The energy cost of recursion depth in tiny recursive models"* (target:
 *Sustainable Computing: Informatics and Systems*).
 
-The package maps the **energy–accuracy frontier of recursion depth versus parameter count** for Tiny
-Recursive Models on symbolic reasoning, under a fixed compute/energy budget, using
-**Joules-to-target-accuracy** as the primary metric on a single consumer GPU (NVIDIA RTX 5060 Ti,
-16 GB). Framing is Green AI (what a design knob costs in joules), not a forecasting scaling
-law. Every empirical number in the manuscript traces to a run artefact: the summary tables, 1 Hz power series and CodeCarbon emissions are in `data/` here, and the per-step learning curves (`progress_*.jsonl`) are in the Zenodo archive.
+The package prices **recursion depth in joules** for Tiny Recursive Models on symbolic reasoning, under
+a fixed compute budget, using **Joules-to-target-accuracy** as the primary metric on a single consumer
+GPU (NVIDIA RTX 5060 Ti, 16 GB). Framing is Green AI (what a design knob costs in joules), not a
+forecasting scaling law. Every empirical number in the manuscript traces to a run artifact in `data/`
+(per-step learning curves, 1 Hz power series, CodeCarbon emissions).
+
+Two things are reported: the measured energy price of depth on the two tasks whose accuracy metric can
+be priced at all (Sudoku-Extreme, ARC-AGI-1), and **three measurement pitfalls** that generalise beyond
+recursion:
+
+1. **Evaluation cost grows with depth** and must be pinned, or the comparison silently charges deeper
+   configurations for their own evaluation.
+2. **A reduced-scale screen ranked the eventual winner last**, so a cheap screen is not a substitute for
+   the faithful recipe.
+3. **A proxy metric must be scored against a trivial baseline** before any effect is read from it. On
+   Maze-Hard this check voids the metric (see below).
+
+Three tasks were measured, and nothing about depth is generalised across them: two carry a priced
+accuracy axis, the third carries only an energy comparison.
 
 **Scale of the study.** 91 runs carry a per-run energy record, totalling **18.6 kWh** of measured GPU
 energy. The **49 faithful-recipe runs** that produce every reported result account for **16.1 kWh**; the
@@ -17,32 +31,65 @@ remaining 42 are pilot and calibration runs. Regenerate this breakdown with
 
 **Energy cross-validation.** CodeCarbon versus integrated `nvidia-smi` agree to **98.8–99.95% on every
 one of the 49 faithful-recipe runs**. The band has two structures worth knowing: agreement depends on the
-measurement window (two aborted 31 s pilot runs give the only values below 98.68%, 98.6% and 95.9%), and it depends on the
-driver stack (the last twelve runs, the Maze-Hard and ARC-AGI-1 seed extensions executed after a driver
-upgrade on the same card, sit systematically at 98.82–98.93% against 99.11–99.95% for the 37 runs before it). Scope matters: the earlier pilot runs, which contribute no
-reported number, fall as low as 95.9%. Per-run agreement is the `gross_agree_pct` column of each summary CSV; the reconciliation table gives its range per regime.
-
-
-> **Where the data lives.** This repository carries the code, protocol, and the compact run artifacts.
-> The **complete archive**, including the per-step learning curves (`progress_*.jsonl`) and raw training
-> logs, is deposited on Zenodo under the concept DOI
-> **[10.5281/zenodo.21181342](https://doi.org/10.5281/zenodo.21181342)**. Cite the Zenodo DOI, not this
-> repository, when referring to the data.
+measurement window (the only readings below 98.68% come from two aborted 31 s pilot runs, at 98.6% and
+95.9%), and it depends on the driver stack (the last twelve runs, the Maze-Hard and ARC-AGI-1 seed
+extensions executed after a driver upgrade on the same card, sit systematically at 98.82-98.93% against
+99.11-99.95% for the 37 runs before them). Scope matters: those earlier pilot runs contribute no reported
+number. Per-run agreement is the `gross_agree_pct` column of each summary CSV; the reconciliation table
+gives its range per regime.
 
 ## Contents
 ```
+.zenodo.json            Zenodo deposition metadata
 LICENSE                 MIT (our code)
 THIRD_PARTY_LICENSES.md Licences of the vendored third-party works
 requirements.txt        Python dependencies (torch cu128 for Blackwell GPUs)
 PROTOCOL.md             Full experimental + energy-measurement protocol
-PREREGISTRATION.md      Pre-registration entries for the two seed extensions (verbatim, with commit)
+PREREGISTRATION.md      Pre-registration records: what was fixed before each added batch was launched
+prereg_BM.md            Pre-registration of the 18-run phase BM batch, with amendment 1; a verbatim
+                        journal entry, in Indonesian. That batch was still running when this version
+                        was assembled and no result from it is reported here
 vendor/
   TinyRecursiveModels/  upstream TRM source, pinned at c011037, PRISTINE (MIT, Samsung)
-  patches/              our 2 changes to it, kept separate (progress logging + AdamW shim)
+  patches/              the THREE changes we make to it, kept separate from the upstream tree:
+    0001-emit-per-step-progress-and-eval-metrics.patch   per-step progress log + eval metrics
+    adam_atan2.py                                        AdamW shim (compiled adam-atan2 fails on sm_120)
+    0003-accumulation-and-per-instance-eval.py           gradient accumulation (TRM_ACCUM) and
+                                                         per-instance eval logging (TRM_EVAL_PREDS),
+                                                         both off by default; no released run used them
   arc-agi-1-raw/        raw ARC-AGI-1 tasks (Apache-2.0, fchollet/ARC-AGI @ 3990304)
-code/               run_recipe.py (faithful-recipe runner), stats_table.py (Welch/ANOVA),
-                    microbench.py, reconcile_totals.py, energy sampler, analysis/plot
-                    scripts, optimizer shim, DOI resolvers
+code/
+  -- runners --
+  run_recipe.py            faithful-recipe runner; every reported run came from it
+  run_BM_chain.sh          the phase BM run chain (18 pre-registered runs, see prereg_BM.md)
+  run_arcdepth_s34.sh      the pre-registered ARC seed 3/4 chain (phase AW)
+  run_accum_check.sh       equivalence check for the accumulation patch: ARC D9 at batch 48 x accum 1
+                           against batch 24 x accum 2, whose train-loss curves must coincide
+  run_frontier.sh  run_isoflop.py  run_budget.py  run_scale_sweep.py  run_converge.py
+  run_maze_sweep.py  run_replicate.py  run_xval_seeds.py    pilot/calibration sweeps
+  -- analysis --
+  stats_table.py           Welch t-tests, one-way ANOVA, Bonferroni from the summary CSVs
+  sig_test.py              single-contrast significance helper
+  trivial_baselines.py     majority-class and copy-input baselines on the 512-instance subset
+  add_best_token.py        derives best_token_pct from the per-step logs (best-checkpoint rule)
+  estimator_sensitivity.py depth contrast under four checkpoint rules + exact permutation test
+  validate_costmodel.py    prediction error of the microbenchmark cost model against the real runs
+  analyze_BM.py            the pre-specified phase BM analysis, written before any result existed
+  reconcile_totals.py      run counts, energy totals and cross-validation ranges from the CSVs
+  analyze_crosstask.py  analyze_frontier.py  consolidate_ablation.py  energy_xval_report.py
+  fit_extrapolation.py  joules_to_target.py                 report and ablation-table builders
+  -- figures --
+  make_manuscript_figures.py  regenerates every manuscript figure from the summary CSVs
+  plot_frontier.py  plot_isoflop.py  plot_budget.py          pilot-regime plots
+  -- environment, calibration, patches --
+  rebuild_env.sh           rebuilds the TRM tree + venv from vendor/ and applies patches 1 and 2
+  microbench.py  calibrate_pipeline.sh                       single-GPU calibration
+  make_small_eval.py       builds the fixed 512-instance evaluation subset
+  adam_atan2_fallback.py   the AdamW shim as installed by rebuild_env.sh
+  patch_pretrain_print_metrics.py  pilot-path equivalent of patch 0001
+  patch_pretrain_accum_preds.py    third TRM patch: gradient accumulation (TRM_ACCUM) and
+                           per-instance evaluation logging (TRM_EVAL_PREDS), both off by default
+  resolve_doi.py  resolve_arxiv.py   CrossRef / DataCite reference resolvers
 data/
   microbench_results.csv   calibration (params/throughput/energy per step), RTX 5060 Ti, 14 configs
 
@@ -120,11 +167,12 @@ All uncertainties are the **sample** standard deviation (ddof=1) over three seed
   the shallowest and 7% more than the mid-depth setting (324 vs 314 vs 303 Wh) for nothing measurable.
 - **Trivial baselines** (`code/trivial_baselines.py`, same per-sequence metric as the training loop):
   Sudoku exact 0.00% (majority and copy-input), ARC token 25.00% / 25.00%, Maze token 50.03% / **87.51%**.
-- **Cross-task verdict.** Added recursion depth never bought accuracy on any task measured. Where accuracy
-  could be priced (Sudoku exact, ARC token above baseline) shallow recursion wins by 26 and 5.7 points and
-  reaches a given accuracy on 161 vs 340 Wh and 155 vs 278 Wh. Where it could not be priced (Maze token,
-  below its trivial baseline) the deepest setting only costs 3% more. The paper reports two measured
-  points and one null measurement; it does NOT claim a regime map across tasks.
+- **What the three tasks together support.** Added recursion depth never bought accuracy on any task
+  measured. Where accuracy could be priced (Sudoku exact, ARC token above its trivial baseline) shallow
+  recursion wins by 26 and 5.7 points and reaches a given accuracy on 161 vs 340 Wh and 155 vs 278 Wh.
+  Where it could not be priced (Maze token, below its trivial baseline) only the energy side is reported:
+  the deepest setting costs 3% more for nothing measurable. Two measured points and one null measurement
+  are not a cross-task generalisation, and the manuscript draws none from them.
 - **Checkpoint-estimator sensitivity** (`code/estimator_sensitivity.py`): the ARC D9-vs-D36 gap is 5.7,
   5.4, 5.5 and 3.3 points under the best, final, last-five-mean and median rules, with exact permutation
   p between 0.008 and 0.016 (resolution floor 0.008 at n = 5).
@@ -132,6 +180,27 @@ All uncertainties are the **sample** standard deviation (ddof=1) over three seed
   per-step energy within +15..+24% on Sudoku but is off by more than 90% on Maze and ARC (sequence length
   900 vs the microbenchmark's 81); b rises to 0.94 on the sub-50 configurations; two-exponent fit
   J ~ P^0.82 D^0.92. Use it only within the regime it was measured in.
+
+## Phase BM: pre-registered runs in progress (no results in this version)
+Two simulated peer reviews asked for three things that existing artifacts cannot answer, so an 18-run
+batch was pre-registered in `prereg_BM.md` (with amendment 1, both written and committed before any run
+was launched) and is running at the time this version was assembled:
+
+- the deepest cell of the ARC-AGI-1 and Sudoku-Extreme grids rerun with **gradient accumulation**, so its
+  effective batch matches its neighbours at the same number of epochs (identical compute, reallocated);
+- a **non-recursive control on ARC-AGI-1**, matched on epochs with the ARC `D9` cell;
+- **per-instance evaluation logging**, which splits the 512-instance subset into a selection half and a
+  reporting half and so bounds best-checkpoint selection bias.
+
+`code/run_BM_chain.sh` launches the chain and `code/analyze_BM.py` holds the analysis, written and
+committed before any outcome was visible; it runs once, after all 18 runs finish. **No result from this
+batch is reported anywhere in this package or in the manuscript version it accompanies.** The
+pre-registration binds the reporting: if the ARC gap loses significance once the batch is restored, the
+`p = 0.012` claim is withdrawn.
+
+Operational note recorded with the batch: `GROUPS` is a special bash variable and is not exported, so the
+runner must be given it as `env GROUPS=... cmd`. An `export GROUPS=3080` is silently ignored and the
+runner falls back to its default of 1000, which changes the epoch count.
 
 ## Known limitations recorded in the data
 - The h768 x D_eff=36 microbenchmark cell ran out of memory on the 16 GB card (Table 1 of the manuscript);
@@ -158,4 +227,3 @@ Pendidikan Tinggi, Sains, dan Teknologi), *Penelitian Fundamental - Reguler* sch
 no. 283/C3/DT.05.00/PL-BARU/2026 (30 January 2026), devolved through LLDIKTI Region IV contract
 no. 1650/LL4/PG/2026 (21 April 2026) and institutional contract no. PKS.003/WAREKIII-ULBI/V/2026
 (11 May 2026).
-

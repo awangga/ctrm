@@ -1,4 +1,4 @@
-# Experimental Protocol — Energy–Accuracy Frontier of Recursion Depth
+# Experimental Protocol: the Energy Cost of Recursion Depth
 
 Versioned protocol for reproducing the study. Single consumer GPU (calibrated on NVIDIA RTX 5060 Ti
 16 GB, Blackwell sm_120). Built on the Tiny Recursive Models (TRM) codebase
@@ -7,17 +7,21 @@ Versioned protocol for reproducing the study. Single consumer GPU (calibrated on
 ## 1. Design plane (P × D)
 - **Parameter axis P**: `hidden_size` ∈ {128, 192, 256, 384, 512, 768} (with `L_layers`, `expansion`).
   Parameter count ≈ c·hidden_size² and is **invariant to recursion depth** (verified, see `data/`).
-- **Recursion-depth axis D**: `D_eff = H_cycles × L_cycles` ∈ {4, 6, 9, 12, 18, 24, 32}.
-  Increasing D raises FLOPs/energy without changing P.
+- **Recursion-depth axis D**: `D_eff = H_cycles × L_cycles`. The pilot swept
+  {4, 6, 9, 12, 18, 24, 32}; the faithful-recipe grids that produce every reported result use
+  **{9, 18, 36}**. Increasing D raises FLOPs/energy without changing P.
 
 ## 2. Tasks
 - Primary: **Sudoku-Extreme** (`dataset/build_sudoku_dataset.py`, subsample 1000 × aug).
-- Cross-task generality: **Maze-Hard**, **ARC-AGI-1** (subset).
+- Additional tasks: **Maze-Hard**, **ARC-AGI-1** (subset). Each task's metric is validated against a
+  trivial baseline (§5.1) before any depth effect is read from it; a task that fails the check keeps
+  its energy comparison and loses its accuracy claim.
 
-## 3. Primary metric — Joules-to-target-accuracy
+## 3. Primary metric: Joules-to-target-accuracy
 Cumulative **net** energy to reach a fixed accuracy target τ per task (not kWh/run of differing
-duration). Build the Pareto frontier in (energy, accuracy); locate energy-optimal depth D* and the
-saturation point per task.
+duration). Build the Pareto frontier in (energy, accuracy) and locate the energy-optimal depth D* per
+task. A task whose metric fails §5.1 (below its trivial baseline) yields no D* and contributes only the
+energy comparison.
 
 ## 4. Energy measurement (mandatory corrections)
 1. Log with **CodeCarbon**; cross-check against integrated `nvidia-smi --query-gpu=power.draw` (1 Hz)
@@ -33,14 +37,18 @@ saturation point per task.
    gives its range per regime.
 2. Subtract a fixed idle constant (`IDLE_W = 4.7` W in `code/run_recipe.py`, just above the 4.04 W sampler
    floor observed across all released logs) to obtain net energy; discard runs shorter than 120 s as
-   aborted, and check every reported run by hand for completeness (wall time and step count).
+   aborted, and check every reported run by hand for completeness (wall time and step count). The 120 s
+   filter alone is **not** sufficient: a truncated 161 s run once passed it, so the manual check on wall
+   time and step count is mandatory, not advisory. Reading ~150 W on a GPU that should idle at 4-5 W is
+   the signal that a second run is sharing the card; verify with
+   `nvidia-smi --query-compute-apps`, which must show 0 processes before a launch and 1 after it.
 3. Same GPU for all runs (eliminates inter-device variance). *Planned, not applied:* clock locking and
    temperature logging.
 4. *Planned, not applied:* separate training and inference energy. The reported figure is net training
    energy including the pinned periodic evaluation.
 5. Do **not** rely on raw `nvidia-smi` alone (sensor undersampling is a known bias).
 
-## 5. ⚠ Evaluation-cost rule (critical, from calibration)
+## 5. Evaluation-cost rule (critical, from calibration)
 Training is cheap (a few optimizer steps/epoch on the subsample); **evaluation dominates** — a full
 pass over the Sudoku-Extreme test set (~4.2×10⁵ instances) with 16-step recursive inference does not
 finish in 900 s. **Evaluate on a fixed subset at fixed step intervals**, never the full set per
@@ -48,16 +56,44 @@ checkpoint. This study uses **512 puzzles** (set by `rebuild_env.sh` and `make_s
 identical across every configuration so evaluation cost cannot bias a comparison. Use **fixed recursion depth per configuration** (no depth-curriculum) to avoid
 confounding the energy measurement.
 
+## 5.1 Three measurement pitfalls (the methodological contribution)
+These generalise beyond recursion depth; each one is a rule this protocol enforces.
+
+1. **Evaluation cost grows with the knob under test.** Deeper recursion makes each evaluation pass more
+   expensive, so an unpinned evaluation charges deep configurations for their own measurement. Fix the
+   subset and the step interval across the whole comparison (§5).
+2. **A reduced-scale screen can rank the eventual winner last.** The pilot regime (§11) is retained in
+   this package precisely because its ordering does not survive the faithful recipe. Screen cheaply if
+   you must, but decide on the faithful recipe.
+3. **A proxy metric must be scored against a trivial baseline before any effect is read from it.**
+   Run `code/trivial_baselines.py` (majority-class and copy-input on the same 512-instance subset)
+   first. On Maze-Hard copy-input scores **87.51%** token accuracy while every trained configuration
+   reaches 86.5-86.8%, so that metric measures nothing about task mastery at this budget and supports no
+   depth conclusion. Measured floors: Sudoku exact 0.00%, ARC token 25.00%, Maze token 50.03%/87.51%.
+
 ## 6. IsoFLOP / budget procedure
 For each of ~5–6 fixed compute/energy budgets, sweep (P, D) at that budget; the loss/energy minimum is
 the compute-optimal allocation. Fit P*(C), D*(C), L*(C) on the smaller budgets and **validate by
 predicting** the held-out larger budget; report relative prediction error.
 
 ## 7. Statistics
+- **Scoring rule, identical on every task:** a configuration is scored by its BEST evaluation checkpoint
+  (`best_exact_pct` on Sudoku, `best_token_pct` on Maze and ARC). `best_token_pct` is derived from the
+  per-step logs by `code/add_best_token.py`; `final_token_pct` is kept alongside so the final-checkpoint
+  reading can be recomputed. `code/estimator_sensitivity.py` reports the depth contrast under four
+  checkpoint rules (best, final, last-five mean, median) plus an exact permutation test, so the verdict
+  is not an artifact of the rule.
+- Welch two-sided t-tests and one-way ANOVA (`code/stats_table.py`), **Bonferroni 0.05/3 per axis**
+  (threshold 0.0167) because three pairwise depth contrasts are tested per task.
 - Power-law fits in log space via `scipy.optimize.curve_fit`; **bootstrap confidence intervals** on
-  exponents (≥1000 resamples), consistent with the actual run count.
-- Replicate key points (frontier minima + hold-out) 3×; others 1–2×.
-- Baselines matched on **iso-FLOP/energy** (non-recursive + HRM variants in the codebase).
+  exponents (≥1000 resamples), consistent with the actual run count. `code/validate_costmodel.py` checks
+  the fitted cost model against realised per-run energy and reports where it fails.
+- Replicate key points 3×; five seeds on the Maze-Hard and ARC-AGI-1 depth grids.
+- Baselines matched on **iso-FLOP/energy** (non-recursive + HRM variants in the codebase), plus the
+  trivial baselines of §5.1.
+- **Adding seeds requires pre-registration first** (`PREREGISTRATION.md`, `prereg_BM.md`): the run count,
+  the targeted contrast and the commitment to report any outcome are written and committed before launch,
+  and the analysis is run once, after every run finishes.
 
 ## 8. Reproduce the calibration
 ```bash
@@ -77,9 +113,37 @@ Code:
   augmented dataset, evaluates on a fixed subset at fixed intervals, and emits per run
   `progress_<tag>.jsonl` (train loss/step + eval/checkpoint), `pw_<tag>.csv` (1 Hz power),
   `emissions_<tag>.csv` (CodeCarbon), plus a self-describing summary row. Env vars:
-  `HIDDEN/DEPTH/BATCH/STEPS/SEED/DATA/OUT_DIR/NEVAL/EMA`.
+  `HIDDEN/DEPTH/BATCH/STEPS/SEED/DATA/OUT_DIR/NEVAL/EMA/GROUPS/ARCH/TRM_DIR`, plus `ACCUM` (micro-batches
+  per optimizer step, effective batch = `BATCH`x`ACCUM`) and `SAVE_PREDS` (directory for per-instance
+  evaluation records); the last two require the third vendor patch and default to off.
 - `code/stats_table.py` — Welch t-test, one-way ANOVA, Bonferroni from the summary CSVs (reproduces the
-  reported significance numbers).
+  reported significance numbers); `code/sig_test.py` is the single-contrast helper it grew from.
+- `code/trivial_baselines.py` — majority-class and copy-input predictors scored on the same 512-instance
+  evaluation subset with the same per-sequence metric as the training loop. Run this before reading any
+  effect from a proxy metric (§5.1).
+- `code/add_best_token.py` — derives the `best_token_pct` column from `progress_<tag>.jsonl` for every run,
+  so the best-checkpoint rule is applied identically on every task; `final_token_pct` is kept alongside.
+- `code/estimator_sensitivity.py` — the depth contrast recomputed under four checkpoint rules (best, final,
+  last-five mean, median) with an exact permutation test, so the verdict is not an artifact of the rule.
+- `code/validate_costmodel.py` — compares the microbenchmark cost model against realised per-run energy and
+  reports the regimes where it fails.
+- `code/make_manuscript_figures.py` — regenerates every manuscript figure, and the faithful-recipe
+  Joules-to-target and iso-accuracy energies, from the committed summary CSVs.
+- `code/run_BM_chain.sh` — the phase BM run chain (§12); `code/analyze_BM.py` — its pre-specified analysis,
+  written and committed before any run of that batch finished; `code/run_accum_check.sh` — the equivalence
+  check that had to pass before the chain was launched: ARC `D9` at batch 48 x accum 1 against batch 24 x
+  accum 2, whose train-loss curves must coincide if the accumulation patch is correct.
+- `code/patch_pretrain_accum_preds.py` — the third TRM patch (identical to
+  `vendor/patches/0003-accumulation-and-per-instance-eval.py`): `TRM_ACCUM` for gradient accumulation and
+  `TRM_EVAL_PREDS` for per-instance evaluation logging, both inert unless the variable is set.
+- `code/patch_pretrain_print_metrics.py`, `code/make_small_eval.py` — the pilot-path equivalent of patch
+  0001 and the fixed 512-instance evaluation subset builder.
+- `code/rebuild_env.sh` — rebuilds the TRM tree and venv from `vendor/` and applies patch 0001 and the
+  AdamW shim; the third patch is applied separately, before the phase BM chain only.
+- `code/run_frontier.sh`, `code/run_isoflop.py`, `code/run_budget.py`, `code/run_scale_sweep.py`,
+  `code/run_converge.py`, `code/run_maze_sweep.py`, `code/run_replicate.py`, `code/run_xval_seeds.py`,
+  `code/plot_frontier.py`, `code/plot_isoflop.py`, `code/plot_budget.py` — the pilot sweeps and their plots
+  (§11); `code/run_arcdepth_s34.sh` — the pre-registered ARC seed 3/4 chain.
 - `code/joules_to_target.py` (pilot grids only; the faithful-recipe Joules-to-target and iso-accuracy
   energies are computed by `code/make_manuscript_figures.py`), `code/fit_extrapolation.py`, `code/energy_xval_report.py`,
   `code/analyze_crosstask.py`, `code/consolidate_ablation.py` — analysis (Joules-to-target, energy
@@ -90,9 +154,12 @@ Code:
 - `code/adam_atan2_fallback.py` — AdamW shim used when the compiled `adam-atan2` optimizer is unavailable.
 - `vendor/` — third-party sources vendored so the package needs no network clone: the upstream Tiny
   Recursive Models tree pinned at commit `c011037` (MIT, Samsung Electronics), the raw ARC-AGI-1 tasks
-  (Apache-2.0, `fchollet/ARC-AGI` @ `3990304`), and in `vendor/patches/` the two changes we apply to TRM
-  (per-step progress logging; AdamW shim for sm_120). The upstream trees are unmodified; see
-  `vendor/README.md` and `THIRD_PARTY_LICENSES.md`.
+  (Apache-2.0, `fchollet/ARC-AGI` @ `3990304`), and in `vendor/patches/` the three changes we apply to TRM:
+  `0001-emit-per-step-progress-and-eval-metrics.patch` (per-step progress logging), `adam_atan2.py` (AdamW
+  shim for sm_120), and `0003-accumulation-and-per-instance-eval.py` (gradient accumulation and
+  per-instance evaluation logging, both off unless `TRM_ACCUM` / `TRM_EVAL_PREDS` are set, so the released
+  runs are unaffected). The upstream trees are unmodified; see `vendor/README.md` and
+  `THIRD_PARTY_LICENSES.md`.
 - `code/reconcile_totals.py` — recomputes run counts, net energy totals, and per-run
   CodeCarbon-vs-`nvidia-smi` agreement ranges from every committed summary CSV, splitting the
   faithful-recipe and pilot regimes. Run as `python3 code/reconcile_totals.py --data-root data`.
@@ -105,7 +172,10 @@ Data:
 - `data/maze_depth_out/` — real-accuracy Maze-Hard depth grid (D9/D18/D36 @ h256, 5 seeds).
 - `data/arc_depth_out/` — real-accuracy ARC-AGI-1 depth grid (D9/D18/D36 @ h256, 5 seeds). Built from
   ARC-AGI-1 training+evaluation (no ConceptARC), 1000x augmentation, test truncated to 512; `GROUPS=3080`
-  (= 800 groups x mean_puzzle_examples 3.85) so labelled steps equal actual optimizer steps.
+  (= 800 groups x mean_puzzle_examples 3.85) so labelled steps equal actual optimizer steps. **Pass it as
+  `env GROUPS=3080 ... python code/run_recipe.py`, never with `export`:** `GROUPS` is a special bash
+  variable and is not exported, so `export GROUPS=3080` is silently ignored and the runner falls back to
+  its default of 1000, which changes the epoch count without any error being raised.
 - `data/maze_real_out/` — Maze faithful-recipe probe.
 - `data/ablation_reports/` — analysis reports, the consolidated ablation table (`ablation_master.csv`),
   pooled learning curves (`learning_curves_all.csv`), per-seed accuracies, Joules-to-target, significance
@@ -136,17 +206,38 @@ Metric: exact accuracy for Sudoku (discriminating, 36–62%); **token accuracy f
 there); every configuration is scored by its BEST evaluation checkpoint (`best_exact_pct` / `best_token_pct`),
 the same rule on every task. Energy is idle-corrected and cross-validated CodeCarbon vs `nvidia-smi` (98.8–99.95%).
 
-## 11. Pilot frontier (validasi pipeline end-to-end)
+## 11. Pilot frontier (end-to-end pipeline validation)
 ```bash
-# 1) test set kecil (atasi bottleneck eval)
+# 1) small test set (removes the evaluation bottleneck)
 python code/make_small_eval.py data/sudoku-cal data/sudoku-pilot 512
-# 2) buat pretrain.py mencetak metrik eval (default hanya ke W&B)
+# 2) make pretrain.py print eval metrics (upstream reports only to W&B)
 python code/patch_pretrain_print_metrics.py pretrain.py
-# 3) sapu recursion depth pada budget tetap, rekam akurasi/loss + energi net
+# 3) sweep recursion depth at a fixed budget, recording accuracy/loss + net energy
 bash code/run_frontier.sh
-# 4) ringkas jadi tabel + report
+# 4) summarise into a table + report
 python code/analyze_frontier.py
 ```
-Pilot (hidden=256, 1562 step/config, eval subset 512) memvalidasi alur dan mereproduksi
-**energi net ∝ recursion depth** dalam run training nyata (D_eff 9/18/36 → 3.34/5.94/11.40 Wh).
-Akurasi pilot ≈ 0 (under-trained); frontier sebenarnya menaikkan budget hingga mencapai τ.
+The pilot (hidden = 256, 1562 steps/config, 512-instance eval subset) validated the pipeline and
+reproduced **net energy ∝ recursion depth** in real training runs (D_eff 9/18/36 → 3.34/5.94/11.40 Wh).
+Pilot accuracy is ≈ 0 (under-trained); the real frontier raises the budget until τ is reached. Keep this
+regime in view when reading §5.1 pitfall 2: the pilot ordering does not survive the faithful recipe, so a
+cheap screen decides nothing.
+
+## 12. Pre-registered batch in progress (phase BM)
+Adding runs after seeing a result requires pre-registration first (§7). The current batch, 18 runs
+pre-registered in `prereg_BM.md` with amendment 1, was **still running** when this version of the package
+was assembled, and **no result from it appears anywhere in this package**. It answers three requests that
+the existing artifacts cannot:
+
+1. the deepest cell of the ARC-AGI-1 and Sudoku-Extreme depth grids rerun with gradient accumulation
+   (`ACCUM=2`), so its effective batch matches its neighbours at the same epoch count, which separates the
+   depth effect from the batch-size difference that came with it;
+2. a non-recursive control on ARC-AGI-1, matched on epochs with the ARC `D9` cell, the counterpart of the
+   Sudoku baseline already reported;
+3. per-instance evaluation logging (`SAVE_PREDS`), which splits the 512-instance subset into a selection
+   half and a reporting half and so bounds the selection bias of the best-checkpoint rule.
+
+`code/run_BM_chain.sh` runs the chain; `code/analyze_BM.py` holds the analysis, written and committed
+before any outcome was visible, and is executed once, after all 18 runs finish. The pre-registration binds
+the reporting in both directions: if the ARC depth contrast loses significance once the batch is folded in,
+the `p = 0.012` claim is withdrawn.

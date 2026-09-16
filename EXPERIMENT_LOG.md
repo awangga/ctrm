@@ -2690,3 +2690,81 @@ non-rekursif iso-compute di ARC (5), dan ulangan dengan logging prediksi per-ins
 melaporkan hasil apa pun, termasuk **pencabutan klaim 5,7 poin ARC bila signifikansinya hilang**, ada di
 dokumen itu. Perkiraan 34 jam GPU. Bila penulis memilih submit lebih dulu, keterbatasan ini sudah
 tertulis di Threats.
+
+---
+
+## Fase BM (lanjutan): patch akumulasi diverifikasi, rantai 18 run diluncurkan (2026-09-16)
+
+**Patch ketiga ke pohon ter-vendor** (`patch_pretrain_accum_preds.py`), keduanya OFF secara default:
+`TRM_ACCUM=N` (gradient accumulation) dan `TRM_EVAL_PREDS=<dir>` (akurasi token per-instance tiap
+checkpoint, untuk pembelahan separuh-seleksi/separuh-pelaporan). Carry ACT membuat batch berperan
+sebagai kolam slot paralel, sehingga N kolam micro yang hidup berdampingan setara satu batch N x micro;
+`total_steps` dibagi N agar `train_state.step` tetap menghitung langkah optimizer, dan EMA hanya
+diperbarui di batas akumulasi.
+
+**Uji kesetaraan (ARC D9 pendek, EPOCHS=20, `accum_check_out/`):**
+
+| | batch 48, accum 1 | micro 24 x accum 2 |
+|---|---:|---:|
+| langkah optimizer | 1240 | 1201 |
+| micro-batch | 1240 | 2402 (tepat 2x) |
+| token acc akhir | 22,68% | 23,00% |
+| energi net | 20,78 Wh | 20,46 Wh |
+| wall | 508 s | 515 s |
+
+Kurva train-loss berimpit (selisih per desil <=10%, dalam derau urutan data), overhead wall 1,4%.
+Catatan jujur: akumulasi kehilangan ~3% langkah optimizer (1201 lawan 1240) karena micro-batch sisa di
+ujung tiap epoch tidak menutup jendela akumulasi. Dicatat, bukan dikoreksi.
+
+**Jebakan yang nyaris merusak seluruh batch: `GROUPS` adalah variabel khusus bash.** `export GROUPS=3080`
+TIDAK ikut ke environment anak (begitu pula bentuk awalan `GROUPS=3080 cmd`); hanya `env GROUPS=3080 cmd`
+yang bekerja. Percobaan pertama diam-diam memakai default 1000 sehingga epoch salah. Runner ARC lama
+memang sudah memakai bentuk `env`, jadi grid lama aman. Rantai baru memakai bentuk `env` dan
+environment proses diperiksa lewat `/proc/<pid>/environ` setelah peluncuran.
+
+**Rantai `run_BM_chain.sh` diluncurkan** (preflight: 0 compute app, 5,36 W; sesudahnya 1 compute app,
+1 rantai). A1 seed 0 berjalan dengan `epochs=75 eval_interval=3 L_cycles=12 global_batch_size=24
+TRM_ACCUM=2 GROUPS=3080`, memori GPU 7,4 GB. Notifikasi Telegram per run, commit+push per batch.
+Analisis pra-spesifikasi ada di `analyze_BM.py`, ditulis sebelum hasil ada.
+
+---
+
+## Fase BN: copy-edit sembilan section, audit visual figur/tabel, dan penyelarasan tiga kanal (2026-09-16)
+
+Naskah hasil penulisan ulang fase BM belum pernah diperiksa ulang secara menyeluruh, jadi dijalankan 16
+agen paralel: sembilan menyunting satu section masing-masing di berkas terpisah, empat memeriksa figur dan
+tabel secara visual, tiga menyelaraskan dokumentasi repo kerja, paket Zenodo, dan cermin `ctrm`. Enam agen
+sempat mati karena batas sesi API; tiga di antaranya sudah menulis suntingan sebelum mati, jadi berkasnya
+diverifikasi satu per satu lalu agen pengganti diminta memeriksa hasil separuh jadi itu lebih dulu.
+
+**Penggabungan diverifikasi.** Himpunan angka, kunci `\cite`, `\ref`/`\label`, path figur, dan keseimbangan
+lingkungan identik dengan sebelum suntingan, kecuali dua penghapusan sengaja yang keduanya duplikasi
+caption-versus-badan: rentang daya 140-175 W (tetap ada di paragraf cakupan) dan angka langkah 24k/32k/43,4/48,9
+di caption Fig. 5 (tetap ada di badan). Setiap angka diperiksa masih muncul minimal sekali. Kompilasi
+46 halaman, 0 error, abstrak 241 kata, highlights <=81 karakter.
+
+**Dua cacat figur yang mengubah pesan, ditemukan hanya lewat pemeriksaan visual.**
+1. **Fig. 9 tidak menyampaikan klaimnya.** Pada panel kiri berskala akurasi absolut 0-100%, marker Maze
+   (86,5-86,8%) dan garis baseline 87,51% terpisah kurang dari 1% lebar sumbu, sehingga mustahil melihat
+   marker ada di bawah garis; klaim utama figur hanya hidup di caption. Panel kiri diubah menjadi **jarak
+   ke baseline sepele**: Sudoku +36,3 sampai +62, ARC +5,6 sampai +11,3, Maze -1,0 sampai -0,7.
+2. **Fig. 7 panel Maze menyesatkan.** Rentang sumbu-y 86,2-87,0 tidak memuat garis 87,51, sehingga profil
+   terbaca seolah punya puncak di D18. Tiap panel kini menggambar baseline metriknya (0 / 25,0 / 87,51)
+   dan rentang-y diperluas agar garis itu masuk.
+3. **Fig. 1** melanggar ambang artwork Elsevier: font kotak 6,3 pt tercetak ~5,1 pt (minimum 7 pt) dan teks
+   tembus kotak. Kotak diperlebar, font dinaikkan, dan panah penolakan dipindah dari kotak cross-validate
+   ke kotak training serta diubah jadi abu, karena kesepakatan instrumen **bukan** gerbang buang, persis
+   yang dinyatakan caption.
+
+**Kontradiksi teks yang ditutup.** Caption Fig. 3 menyebut sumbu $(P,D_\text{eff})$ padahal sumbunya $h$,
+dan mengklaim seluruh titik iso-compute padahal baseline energy-matched. Sec 5.7 masih menyebut cost model
+"validated tool for planning" padahal Sec 3 kini melaporkan galat prediksinya (+15..24% Sudoku, >90% meleset
+di seq 900). Abstrak menulis 87,5 sedangkan angka terverifikasi 87,51. Algoritma 1 menyebut skrip tanpa
+awalan `code/`. Proksi token tak lagi disebut "informative" tanpa syarat.
+
+**Tiga kanal diselaraskan.** Repo kerja (README, eksperimen/README, CLAUDE.md), paket Zenodo, dan cermin
+`ctrm` (kode fase BM disalin, tanpa `progress_*.jsonl`). Arsip pra-registrasi diberi **catatan editorial**:
+kutipannya tetap verbatim, termasuk bahasa "regime map" yang kini dicabut, karena pra-registrasi yang
+ditulis ulang setelah hasil keluar tidak ada gunanya; pembaca diberi tahu di teks pembungkusnya.
+
+Rantai 18 run fase BM terus berjalan selama seluruh pekerjaan ini, tidak terganggu.
