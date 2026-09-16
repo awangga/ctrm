@@ -2899,3 +2899,34 @@ judul lama tetap apa adanya di entri fase BM, penggantiannya dicatat di entri in
 
 **Status:** 48 halaman, 0 error, halaman Highlights dirender dan diperiksa. Rantai BM tetap berjalan
 (run 2/18).
+
+### Fase BP (lanjutan): judul dipangkas agar masuk rentang panjang SUSCOM
+
+Judul 18 kata yang diputuskan di atas diuji terhadap dua sumber, bukan selera.
+
+**Aturan tertulis.** Guide for Authors hanya menyatakan "Article titles should be concise and informative.
+Please avoid abbreviations and formulae, where possible." Tidak ada batas numerik. Judul kita bebas
+singkatan dan rumus.
+
+**Sebaran empiris** dari 12 paper SUSCOM yang PDF-nya ada di `/home/adb/awangga/uploads/`, judul diambil
+dari metadata PDF:
+
+| | kata | karakter | titik dua |
+|---|---|---|---|
+| korpus SUSCOM (n=12) | 8-15 (median 12) | 67-116 (median 93,5) | 6/12 |
+| judul 18 kata | **18** | 113 | ya |
+| judul final | **15** | 84 | ya |
+
+Bentuk dua klausa dengan titik dua memang idiom venue, jadi sisi itu sudah baku. Yang tidak baku adalah
+panjangnya: 18 kata melampaui judul terpanjang di korpus (15 kata), dan itu satu-satunya unsur judul yang
+tidak punya preseden. Karakternya selamat (113 lawan maksimum 116) hanya karena kata-katanya pendek.
+
+**Judul final:** *The energy cost of recursion depth: more joules, no extra accuracy at a fixed budget*
+(15 kata, 84 karakter). "energy" tetap di klausa pertama sebagai sinyal scope, pagar "at a fixed budget"
+dipertahankan karena itulah yang menahan klaim agar tidak terbaca universal, dan "tiny recursive models"
+dilepas ke abstrak, keyword, serta kalimat pertama abstrak yang memang sudah menyebutnya.
+
+Catatan kejujuran: draf pertama pangkasan memakai "more joules and no extra accuracy" dan dihitung 15
+kata, padahal 16. Hitungan diulang dengan skrip, bentuk koma yang dipakai.
+
+**Status:** 48 halaman, 0 error, halaman Highlights dan halaman judul dirender dan diperiksa.
