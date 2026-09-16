@@ -2930,3 +2930,153 @@ Catatan kejujuran: draf pertama pangkasan memakai "more joules and no extra accu
 kata, padahal 16. Hitungan diulang dengan skrip, bentuk koma yang dipakai.
 
 **Status:** 48 halaman, 0 error, halaman Highlights dan halaman judul dirender dan diperiksa.
+
+---
+
+## Fase BQ: audit enam lensa, dua koreksi substantif (2026-09-16)
+
+Enam agen baca-saja memeriksa naskah terhadap hasil penyaringan meja (BL), dua penelaah tersimulasi (BM),
+Guide for Authors, keterlacakan angka, dan koherensi lintas dokumen. Tiap angka yang dipersoalkan
+dihitung ulang dari artefak lebih dulu. Arsip lengkap: `eksperimen/review/` (tiga dokumen + peringatan
+bahwa semuanya simulasi internal, bukan laporan penelaah jurnal).
+
+### Koreksi 1: klaim family-wise salah, dan condong menguntungkan penulis
+
+Naskah menyatakan delapan kontras bertahan pada ambang seluruh-naskah `alpha=0,05/15=0,0033`. Dihitung
+dari `ablation/stats_table_contrasts.csv`, yang bertahan hanya **tiga dari lima belas**: Sudoku D9-D36
+(p=5,6e-5), D18-D36 (p=0,0013), dan h512-h256 (p=0,0010). Tidak lolos: D9-D18 (0,0050), h768-h256
+(0,0046), h512-h768 (0,0066), D9-lawan-baseline (0,0083), D36-lawan-baseline (0,0041). Paragraf itu
+ditulis justru untuk mendahului serangan koreksi ganda, tetapi memuat pernyataan yang dapat dibantah
+Tabel A.1 naskah sendiri. Diganti dengan daftar tiga kontras yang benar, ditambah pernyataan bahwa yang
+lolos koreksi paling ketat adalah klaim utama saja.
+
+### Koreksi 2: judul dibantah data sendiri
+
+Judul fase BP, "more joules, no extra accuracy at a fixed budget", salah pada pembacaan paling wajar.
+Energi net per run justru TURUN dengan kedalaman: Sudoku h512 402/358/340 Wh dan ARC 289/281/278 Wh;
+hanya Maze naik (314/303/324). Naskah sendiri menulis "the shallow model wins even though it uses 18%
+more energy". "More joules" hanya benar pada metrik joules-to-target. Judul final:
+**"The energy cost of recursion depth: half the joules for the same accuracy"** (13 kata, 73 karakter),
+benar pada kedua task berbayar: 161/340 = 47%, 155/278 = 56%.
+
+### Sensitivitas yang justru memperkuat naskah
+
+Penelaah energi menduga residu koreksi idle seukuran klaim energi Maze "+3%". Diuji dengan menghitung
+ulang energi Maze pada tiga konstanta idle:
+
+| idle | D9 | D18 | D36 | D36 vs D9 | D36 vs D18 |
+|---|---:|---:|---:|---:|---:|
+| 0 W | 323,9 | 312,4 | 333,4 | +2,9% | +6,7% |
+| 4,7 W | 314,4 | 303,3 | 323,7 | +3,0% | +6,7% |
+| 8,8 W | 306,0 | 295,4 | 315,3 | +3,0% | +6,7% |
+
+Tidak bergerak: run berdurasi mirip berbagi residu yang sama sehingga saling meniadakan dalam rasio.
+Urutan energi Sudoku juga utuh. Sensitivitas ini masuk naskah sebagai jawaban.
+
+### Angka lain yang dikoreksi setelah dihitung ulang
+
+Residu idle "at most 2%" (fase BO) ternyata maksimum **4,32%**, median 3,14%. Grid checkpoint Maze/ARC
+12-14 Wh ternyata 11-13 Wh. "Absolute ARC accuracy 31-36%" ternyata 30,6-36,3%. "D18 at step 24k = 48,9%"
+ternyata 48,6% (48,9 adalah nilai akhirnya di step 25k). Crossover baseline 140-210 Wh ternyata 130-210 Wh,
+dengan satu keunggulan awal yang sempat terlewat. Lonjakan setup 100-120 W ternyata hanya bertahan paling
+lama 7 detik pada 18 dari 49 run, bukan sepanjang jendela 7-58 detik; dua rentang dari subset berbeda
+tergabung dalam satu kalimat.
+
+### Keterlacakan: satu berkas yang seharusnya sudah ada
+
+Naskah menyatakan berkas rilis mencatat nomor step saat target pertama tercapai beserta energinya, padahal
+`ablation/joules_to_target.csv` hanya memuat run pilot. Nilai Wh-to-target untuk 49 run faithful hanya
+dihitung ulang saat skrip figur dijalankan dan tidak tersimpan. Dibuat `joules_to_target_faithful.py` ->
+`ablation/joules_to_target_faithful.csv` (117 baris, 59 pasangan run x target tercapai). Kelima angka
+naskah direproduksi persis dari berkas itu: 268+-19, 329+-17, 353+-43, 161+-1, 155+-82.
+
+Audit keterlacakan menyeluruh: ~280 nilai empiris dihitung ulang dengan skrip independen, **272 cocok**,
+termasuk seluruh 15 baris Tabel A.1, keempat nilai F, 36 nilai per-seed Tabel B.1, dan cost model
+(b=0,8423, CI [0,7525, 0,9213], R2=0,982).
+
+### Perbaikan lain
+
+Kaveat NVML belum sampai ke Introduction, Results, Threats, dan `zenodo/README.md`; Threats bahkan menulis
+kesepakatan dua pembacaan "memitigasi bias sampling", padahal keduanya berbagi satu sensor. Keempatnya
+ditulis ulang. Batas rezim cost model ditambahkan di Related Work dan Practical guidance yang terlewat.
+Derajat kebebasan Welch 2,1-2,8 kini diakui rapuh, disertai fakta bahwa uji permutasi eksak pun tak
+menolong pada n=3 karena hanya ada C(6,3)=20 pembelahan sehingga p dua-sisi terkecil adalah 0,10.
+Kuantisasi checkpoint (~16 Wh) dipropagasikan ke angka Joules-to-target. Acknowledgements dipindah ke
+tepat sebelum daftar pustaka sesuai GfA, dan atas keputusan penulis ketiga nomor kontrak dibawa ke sana.
+`highlights.docx` yang basi (masih memuat "metric saturates" dan "ARC by 6") diregenerasi dari
+`highlights.txt`; ketiga salinan highlights kini sinkron. `fig_regime_map.pdf` diganti nama jadi
+`fig_baseline_distance.pdf` beserta fungsi dan labelnya, angka tidak berubah, dan dua anotasi yang
+terpotong tepi panel diperbaiki. Surat pengantar dibersihkan dari catatan verifikasi internal, termasuk
+satu yang mengaku alamat surel penelaah usulan belum terkonfirmasi (alamatnya dihapus).
+`zenodo/PROTOCOL.md` bagian 6 yang masih memerintahkan fit akurasi dan ekstrapolasi hold-out ditandai
+sebagai rencana superseded; `zenodo/PREREGISTRATION.md` yang menulis jurnal kerja "is not redistributed"
+diperbaiki, karena cermin publik memang mengedarkannya.
+
+### Yang tetap terbuka
+
+Klaim ARC masih berdiri di atas dua cacat desain yang diakui (kekurangan compute 17% dan seleksi
+checkpoint tanpa hold-out); keduanya persis yang dijawab batch BM yang sedang berjalan. Bukti Sudoku
+bertumpu pada n=3. Kuantisasi checkpoint lebih besar daripada simpangan antar-seed pada angka
+Joules-to-target.
+
+**Status:** 48 halaman, 0 error, abstrak 249 kata, satu overfull 2,61 pt.
+Commit: `0314e04` (trm), `c2376e5` (ctrm). Rantai BM berjalan, run 2/18.
+
+### Fase BQ (lanjutan): sisa audit ditutup, dan satu kelas kegagalan baru
+
+- **Urutan kutipan figur dijadikan monoton.** Diperiksa dengan skrip, bukan dengan mata: hanya satu float
+  yang salah tempat, yakni figur dua-panel sumbu Sudoku yang dikutip lebih dulu daripada dua figur di
+  atasnya. Float dipindah; urutan kutipan pertama kini 1..9 tanpa pelanggaran. Semua rujukan memakai
+  `\ref` sehingga penomoran menyesuaikan sendiri, dan rujukan silang di caption diperiksa di PDF hasil.
+- **Label panel (a)/(b)** ditambahkan pada figur dua-panel, dan caption diubah dari "Left/Right" menjadi
+  "(a)/(b)". Area plot dibuktikan tidak bergeser: dump content-stream PDF menunjukkan seluruh operator
+  gambar byte-identik pada koordinat yang sama, hanya tinggi kotak halaman bertambah 13,5 pt sama persis
+  di kedua panel.
+- **Surat pengantar:** tanggal dikoreksi, dan klaim "the field has largely accepted that this trade is
+  favourable" dikaitkan ke TRM dan HRM, karena klaim tentang sikap satu bidang tidak bisa ditopang apa pun.
+- **Daftar isi cermin ctrm:** entri `.zenodo.json` yang tidak ada di cermin dibuang, lima berkas nyata
+  yang belum terdaftar ditambahkan.
+- **Schwethelm phi=0,46 sengaja TIDAK ditulis.** Angka itu berasal dari catatan fase BM, bukan dari
+  pembacaan paper aslinya, dan tidak menopang klaim apa pun di naskah. Menuliskannya menambah risiko
+  tanpa menambah nilai.
+
+**Kelas kegagalan baru yang perlu dicatat.** Tiga suntingan fase BQ ternyata **tidak pernah masuk ke
+berkas**: judul subbagian "Cross-task generality" -> "Beyond the primary task", kalimat "test cross-task
+generality", dan satu "Fig." di awal kalimat. Penyebabnya bukan konflik agen, melainkan **tool call yang
+gagal** (classifier timeout) sehingga perintahnya tidak pernah dieksekusi, lalu tidak diperiksa ulang.
+Cacat itu baru ketahuan saat merender halaman figur untuk keperluan lain dan membaca judul subbagian di
+bawahnya. Pelajaran: setelah tool call gagal, **jangan lanjut seolah berhasil**; verifikasi berkasnya.
+Pelajaran kedua: render dan baca tetap menangkap apa yang grep tidak dicari.
+
+Commit: `d2ace77` (trm), `6921650` (ctrm). Rantai BM tetap berjalan, run 2/18.
+
+### Fase BQ (penutup): cek-ricek menemukan tiga judul usang yang lolos
+
+Penulis meminta pemeriksaan ulang alih-alih menerima laporan "sudah selesai". Dibuat gerbang
+otomatis `eksperimen/frontier/verify_manuscript.py`, 98 invarian diperiksa langsung ke berkas dan ke PDF,
+bukan ke ingatan. Hasil pertama: **5 GAGAL**.
+
+Yang gagal, semuanya nyata:
+
+1. `README.md`, `CLAUDE.md`, dan `lapakhir/BAHAN_perubahan_setelah_lapkemajuan.md` masih memuat judul
+   fase BP ("more joules, no extra accuracy at a fixed budget") yang sudah dicabut di fase BQ. Sebabnya
+   jelas setelah ditelusuri: sapuan judul fase BQ dibagi ke agen (surat pengantar, dokumen zenodo, cermin
+   ctrm) dan sisanya dikerjakan sendiri di `main.tex`, sehingga **tiga berkas itu tidak dimiliki siapa
+   pun**. Pembagian tugas yang tidak menutup seluruh himpunan berkas adalah lubangnya, bukan kelalaian
+   satu agen.
+2. Dua sisanya ternyata **cacat verifiernya sendiri**: `ctrm/README.md` memang menyebut "regime map",
+   tetapi di dalam kalimat yang justru menerangkan bahwa framing itu ditarik, dan judul di `CLAUDE.md`
+   terpotong antar baris sehingga pencocokan literal gagal. Verifier diperbaiki agar mengabaikan sebutan
+   yang konteksnya jelas pencabutan dan menormalkan spasi lebih dulu. Verifier yang berteriak palsu sama
+   tidak bergunanya dengan verifier yang diam.
+
+Setelah perbaikan: **98 OK, 0 GAGAL.**
+
+Skrip itu kini disimpan di repo sebagai gerbang pra-submit yang bisa dijalankan ulang kapan saja,
+khususnya setelah hasil batch BM masuk dan angka naskah berubah.
+
+**Pelajaran yang diangkat jadi aturan:** bila satu perubahan menyentuh banyak kanal, daftar berkasnya
+harus ditutup lebih dulu dan dicocokkan dengan `grep -rn` ke seluruh repo, bukan dibagi per agen lalu
+dianggap lengkap.
+
+Commit: lihat entri berikutnya. Rantai BM tetap berjalan.
