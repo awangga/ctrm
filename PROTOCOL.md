@@ -21,7 +21,13 @@ saturation point per task.
 
 ## 4. Energy measurement (mandatory corrections)
 1. Log with **CodeCarbon**; cross-check against integrated `nvidia-smi --query-gpu=power.draw` (1 Hz)
-   on **every** run (target agreement > 95%). Achieved: **98.8–99.95% on all 49 faithful-recipe runs**;
+   on **every** run (target agreement > 95%). NOTE: both readers use the same NVML sensor, so the
+   agreement bounds the 1 Hz integration error, NOT the accuracy of the sensor itself; absolute energies
+   carry the sensor's uncertainty and only the ordering is protected by the iso-environment.
+   Instruments used here: CodeCarbon 3.2.8 `OfflineEmissionsTracker` (`measure_power_secs=5`,
+   `tracking_mode=machine`, ISO `IDN`); GPU driver 595.71.05 for the first 37 runs and 595.84 for the
+   last 12. GPU energy only: CodeCarbon's CPU (~6.5 W, TDP-derived) and RAM (20 W default) figures are
+   models and are excluded; PSU, host idle, embodied carbon and inference energy are out of scope. Achieved: **98.8–99.95% on all 49 faithful-recipe runs**;
    the earlier pilot runs, which contribute no reported number, fall as low as 95.9%. Per-run agreement
    is the `gross_agree_pct` column of each summary CSV; `data/ablation_reports/run_energy_reconciliation.md`
    gives its range per regime.
@@ -122,6 +128,10 @@ env ... DEPTH=18 BATCH=192 STEPS=25000 SEED=0 python code/run_recipe.py
 env ... DEPTH=36 BATCH=96  STEPS=25000 SEED=0 python code/run_recipe.py
 # repeat SEED=1,2; then stats_table.py over recipe_summary.csv
 ```
+BEFORE reading any effect from a proxy metric, score a trivial predictor on the same subset
+(`code/trivial_baselines.py`): majority-class and copy-input. On Maze-Hard copy-input scores 87.51% token
+accuracy, above every trained configuration, so that metric supports no depth conclusion at this budget.
+
 Metric: exact accuracy for Sudoku (discriminating, 36–62%); **token accuracy for Maze and ARC** (exact = 0
 there); every configuration is scored by its BEST evaluation checkpoint (`best_exact_pct` / `best_token_pct`),
 the same rule on every task. Energy is idle-corrected and cross-validated CodeCarbon vs `nvidia-smi` (98.8–99.95%).

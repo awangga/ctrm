@@ -117,7 +117,8 @@ def main():
             ("Sudoku depth", r"$D_{18}$ vs $D_{36}$", "t", (sud_depth["18"], sud_depth["36"])),
             ("Sudoku depth", r"$D_9$ vs $D_{36}$", "t", (sud_depth["9"], sud_depth["36"]))]
     FAM += [("Sudoku width", r"$h_{512}$ vs $h_{256}$", "t", (sud_width["512"], sud_width["256"])),
-            ("Sudoku width", r"$h_{512}$ vs $h_{768}$", "t", (sud_width["512"], sud_width["768"]))]
+            ("Sudoku width", r"$h_{512}$ vs $h_{768}$", "t", (sud_width["512"], sud_width["768"])),
+            ("Sudoku width", r"$h_{768}$ vs $h_{256}$", "t", (sud_width["768"], sud_width["256"]))]
     FAM += [("Sudoku baseline", r"$D_9$ vs non-recursive", "t", (sud_depth["9"], base_vals)),
             ("Sudoku baseline", r"$D_{18}$ vs non-recursive", "t", (sud_depth["18"], base_vals)),
             ("Sudoku baseline", r"$D_{36}$ vs non-recursive", "t", (sud_depth["36"], base_vals))]

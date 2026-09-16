@@ -579,65 +579,64 @@ def _tcrit(df, alpha=0.05):
 
 
 def fig_regime_map(out_path, data_root):
-    """Peta rezim: posisi metrik (sebab) di kiri, efek kedalaman bertanda (akibat) di kanan.
+    """Kiri: posisi tiap task relatif terhadap baseline sepele dan langit-langit skalanya.
+    Kanan: efek kedalaman bertanda dengan CI 95% Welch.
 
-    Sumbu pengorganisasi SENGAJA bukan 'spread', karena spread secara aljabar sama
-    dengan |efek| (urutan kedalaman monoton di ketiga task) sehingga plot efek-vs-spread
-    akan tautologis. Panel kiri membawa informasi yang tidak ada di panel kanan:
-    di mana konfigurasi duduk pada skala metriknya, yakni berapa sisa ruang ke langit-langit.
+    Fase BM: panel kiri tidak lagi memakai 'headroom' (sumbu peta rezim lama), karena
+    reviewer benar bahwa jarak-ke-100% tak sebanding antar metrik. Yang ditampilkan kini
+    adalah acuan yang bisa diperiksa siapa pun: baseline copy-input / majority-class pada
+    subset evaluasi yang sama. Maze-Hard duduk DI BAWAH baseline copy-input, sehingga
+    metrik tokennya tidak mengukur penguasaan task pada anggaran ini.
     """
     from stats_table import welch
     rec = os.path.join(data_root, "recipe_out")
+    # Baseline sepele dari ablation/trivial_baselines.md. Sudoku memakai akurasi EXACT, yang
+    # baseline sepelenya 0%; Maze dan ARC memakai akurasi token (copy-input 87,51% dan 25,00%).
     specs = [
         ("Sudoku-Extreme", "exact", os.path.join(rec, "recipe_summary.csv"), "best_exact_pct",
-         lambda r: r["hidden"] == "512" and "recipe" in r["tag"], "discriminating"),
+         lambda r: r["hidden"] == "512" and "recipe" in r["tag"], 0.0, "informative"),
         ("ARC-AGI-1", "token", os.path.join(data_root, "arc_depth_out", "recipe_summary.csv"),
-         "best_token_pct", lambda r: True, "discriminating"),
+         "best_token_pct", lambda r: True, 25.0, "informative"),
         ("Maze-Hard", "token", os.path.join(data_root, "maze_depth_out", "recipe_summary.csv"),
-         "best_token_pct", lambda r: True, "saturated"),
+         "best_token_pct", lambda r: True, 87.5, "at floor"),
     ]
     fig, (axL, axR) = plt.subplots(1, 2, figsize=(6.6, 3.0), sharey=True,
                                    gridspec_kw={"width_ratios": [1.55, 1.0], "wspace": 0.08})
-    shades = {"discriminating": OI["blue"], "unresolved": OI["grey"], "saturated": OI["vermillion"]}
+    shades = {"informative": OI["blue"], "at floor": OI["vermillion"]}
     marks = {"9": "o", "18": "s", "36": "^"}
     ylabels = []
-    for row, (task, metric, path, col, filt, regime) in enumerate(specs):
+    for row, (task, metric, path, col, filt, base, status) in enumerate(specs):
         y = len(specs) - 1 - row
         groups = {}
         for r in csv.DictReader(open(path)):
             if filt(r):
                 groups.setdefault(r["D_eff"], []).append(float(r[col]))
         means = {k: float(np.mean(v)) for k, v in groups.items()}
-        # panel kiri: posisi tiap kedalaman pada skala metrik 0-100
         axL.plot([0, 100], [y, y], color="0.88", lw=5, solid_capstyle="butt", zorder=1)
+        # baseline sepele
+        axL.plot([base, base], [y - 0.28, y + 0.28], color="0.35", lw=1.4, zorder=4)
+        lx, ha = (base + 2, "left") if base < 6 else (base, "center")
+        axL.text(lx, y + 0.30, "trivial\nbaseline", ha=ha, va="bottom", fontsize=6.6,
+                 color="0.35", linespacing=0.95)
         for k in ("9", "18", "36"):
             axL.errorbar(means[k], y, xerr=np.std(groups[k], ddof=1), fmt=marks[k], ms=4.4,
-                         color=shades[regime], ecolor=shades[regime], elinewidth=1, capsize=2,
-                         zorder=3, mfc="white" if regime == "unresolved" else shades[regime])
-        best = max(means.values())
-        axL.annotate("", xy=(100, y + 0.27), xytext=(best, y + 0.27),
-                     arrowprops=dict(arrowstyle="<->", color="0.55", lw=0.7, shrinkA=0, shrinkB=0))
-        axL.text((best + 100) / 2, y + 0.40, f"{100 - best:.0f} pts left", ha="center",
-                 fontsize=8.2, color="0.35")
-        # panel kanan: efek bertanda + CI 95%
+                         color=shades[status], ecolor=shades[status], elinewidth=1, capsize=2,
+                         zorder=3, mfc="white" if status == "at floor" else shades[status])
         d9, d36 = groups["9"], groups["36"]
         t, df, pval, _ = welch(d36, d9)
         diff = means["36"] - means["9"]
-        se = abs(diff / t)
-        ci = _tcrit(df) * se
-        # Ambang Bonferroni per sumbu (3 kontras), sama dengan Tabel A.1. Penanda terisi
-        # berarti kontras D36-D9 lolos 0.0167 (fase BJ: Sudoku dan ARC terisi, Maze kosong).
+        ci = _tcrit(df) * abs(diff / t)
         sig = pval < 0.05 / 3
-        axR.errorbar(diff, y, xerr=ci, fmt="D", ms=5, color=shades[regime], ecolor=shades[regime],
-                     elinewidth=1.3, capsize=3, mfc=shades[regime] if sig else "white", zorder=3)
+        axR.errorbar(diff, y, xerr=ci, fmt="D", ms=5, color=shades[status], ecolor=shades[status],
+                     elinewidth=1.3, capsize=3, mfc=shades[status] if sig else "white", zorder=3)
         axR.text(diff, y - 0.34, (f"{diff:+.1f}" + ("" if sig else " n.s.")), ha="center",
-                 fontsize=8.6, color=shades[regime])
-        ylabels.append((y, f"{task}\n({metric}), {regime}"))
+                 fontsize=8.6, color=shades[status])
+        ylabels.append((y, f"{task}\n({metric}), {status}"))
     axL.set_xlim(0, 108)
     axL.set_ylim(-0.75, len(specs) - 0.35)
     axL.set_yticks([y for y, _ in ylabels])
-    axL.set_yticklabels([lab for _, lab in ylabels], fontsize=8.6)
-    axL.set_xlabel("Where the metric sits (%)")
+    axL.set_yticklabels([lab for _, lab in ylabels], fontsize=8.2)
+    axL.set_xlabel("Accuracy on the 512-instance subset (%)")
     axR.axvline(0, color="0.45", lw=0.9, zorder=2)
     axR.set_xlabel(r"Depth effect, $D_{36}-D_9$ (points)")
     axR.set_xlim(-33, 12)
@@ -650,7 +649,6 @@ def fig_regime_map(out_path, data_root):
     fig.savefig(out_path)
     plt.close(fig)
     print(f"  tulis {out_path}")
-
 
 def fig_protocol(out_path):
     """Diagram alur protokol pengukuran. Skema, bukan figur data.

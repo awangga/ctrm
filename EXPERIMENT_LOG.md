@@ -2585,3 +2585,108 @@ Naskah 42 halaman, 0 error, abstrak 250 kata, highlights <=84 karakter. Tarball 
 paket final (md5 `2549fe2377b190239637f8c4c8ee3ef8`); README/PROTOCOL draft 22765548 diganti; unggahan
 tarball berjalan (dua percobaan sebelumnya gagal: badan kosong, lalu 502; laju ~55 KB/s). Cermin
 `awangga/ctrm` diselaraskan (kode, README, PROTOCOL, artefak ringkas dengan kolom `best_token_pct`).
+
+**Zenodo v5 DITERBITKAN (2026-09-16).** Draft 22765548: `README.md` (md5 c4dc9c3b...), `PROTOCOL.md`
+(bb2f457c...), `THIRD_PARTY_LICENSES.md` (tak berubah), tarball 115.593.542 byte (md5
+`2549fe2377b190239637f8c4c8ee3ef8`); keempat md5 dicocokkan dengan salinan lokal sebelum publish. Percobaan
+unggah ketiga berhasil (HTTP 201, 562 s). DOI versi **10.5281/zenodo.22765548**; concept DOI
+`10.5281/zenodo.21181342` terverifikasi me-resolve ke `records/22765548`. Cermin `awangga/ctrm` commit
+`f533770`. Naskah, paket Zenodo, dan cermin kini memuat verdict yang sama.
+
+---
+
+## Fase BL: desk screening lima lensa dan perbaikan yang diminta (2026-09-16)
+
+Naskah dinilai sebagai desk editor SUSCOM oleh lima agen independen (scope, kontribusi/novelty, kesehatan
+teknis, presentasi/kepatuhan GfA, etika/integritas). Kelimanya: **kirim ke reviewer** (scope dan presentasi
+keyakinan tinggi; tiga lainnya sedang). Tidak ada alasan tolak di meja.
+
+Cacat yang ditemukan dan ditutup (commit b18b371 + commit fase ini):
+1. Referensi silang rusak "Section efsec:results-crosstask" (sisa karakter CR dari penulisan ulang fase BJ)
+   -> "Section 5.3". Label sumbu Fig 3 masih "P ∝ h²" -> dibuang, figur diregenerasi. Tabel A.1 kini memuat
+   ketiga kontras lebar (h768 vs h256 p=0,0046 ditambahkan; alpha 0,0167).
+2. **Sumber benchmark tidak disitasi** padahal Data availability menyatakan "whose sources are cited":
+   ditambah `WangHRM2025` (HRM, arXiv 2506.21734: Sudoku-Extreme, Maze-Hard) dan `Chollet2019`
+   (arXiv 1911.01547: ARC), keduanya diverifikasi DataCite; disitir di Sec 4, Tabel 2, Data availability.
+3. Literatur terdekat: `JinTTC2025` (arXiv 2505.14733, energi test-time compute LLM) di Intro;
+   `GaoLoopie2026` (arXiv 2607.16051) untuk mengakui bahwa "N x parameter mengalahkan N x looping pada
+   compute pre-training sama" sudah dikenal; kalimat "cut against the premise" diganti: yang baru adalah
+   sisi energinya. Intro menegaskan lingkup = alokasi anggaran pelatihan, energi inferensi di luar ukur.
+4. Threats: paragraf baru tiga keterbatasan sumbu kedalaman: (a) sel D36 memakai batch setengah (96 vs 192;
+   24 vs 48) tanpa retune lr, sehingga kontras yang melibatkan D36 menguji depth+batch; D9-vs-D18 bersih;
+   (b) ACT halting membuat compute per langkah adaptif, Eq. 1 nominal; (c) bias seleksi checkpoint terbaik
+   pada subset evaluasi yang sama tanpa held-out, terbesar di ARC.
+5. Cover letter: komentar HTML internal dan reviewer ke-5 berlabel "confirm before submitting" dibuang
+   (empat reviewer tersisa). Sec 2.3 "49 run (48 masuk hasil + 1 probe)". Kosmetik: "joules" huruf kecil,
+   "Fig." di tengah kalimat.
+
+Naskah 43 halaman, 0 error, abstrak 250 kata, 51 sitasi. Catatan untuk reviewer (bukan alasan meja):
+signifikansi ARC bertumpu pada sel D36 yang 17% di bawah budget dan batch setengah; regime map tiga titik;
+hanya energi pelatihan; panjang di ujung atas jurnal.
+
+---
+
+## Fase BM: simulasi peer review dua reviewer, dan temuan baseline Maze yang mengubah klaim (2026-09-16)
+
+Naskah dinilai oleh dua reviewer tersimulasi dengan profil yang lazim dipakai SUSCOM: R1 pakar
+pengukuran energi/sistem, R2 pakar arsitektur rekursif/statistik. Keduanya memverifikasi angka langsung
+dari paket Zenodo, keduanya **major revision**, keduanya menyatakan naskah dapat diterima setelah revisi.
+
+### Temuan terbesar: metrik token Maze berada DI BAWAH baseline sepele
+
+R2 curiga Maze berada di lantai kelas mayoritas. Diperiksa dengan `trivial_baselines.py` (metrik
+direplikasi persis dari `models/losses.py`: mask label, rata-rata per urutan):
+
+| task | metrik dilaporkan | majority token | copy-input token | model terbaik |
+|---|---|---:|---:|---:|
+| Sudoku-Extreme | exact | 0,00 | 0,00 | 62,4 |
+| ARC-AGI-1 | token | 25,00 | 25,00 | 36,3 |
+| Maze-Hard | token | 50,03 | **87,51** | 86,8 |
+
+Sel lintasan hanya 12,5% dari grid 30x30, sehingga **menyalin input sudah mencetak 87,51%**, di atas
+setiap konfigurasi yang kita latih (86,5-86,8%). Artinya metrik token Maze **tidak mengukur penguasaan
+task** pada anggaran ini, dan "efek kedalaman" di sana adalah lantai metrik. Ini lebih kuat daripada
+dugaan reviewer. Konsekuensinya diterapkan apa adanya (aturan #5):
+
+- Baris ketiga peta rezim **runtuh**: Maze dilaporkan sebagai **null measurement**, bukan rezim jenuh.
+- **"Cross-task regime map" DICABUT** dari judul, abstrak, sintesis, Tabel 7 (dihapus), dan Fig 9
+  (diganti figur baseline-vs-efek). Sumbu pengorganisasi peta (headroom) memang tak sepadan antar
+  metrik, persis keberatan R2-M4, dan basis empirisnya tinggal dua titik.
+- **Judul baru: "The energy cost of recursion depth in tiny recursive models".**
+- Klaim naskah kini: kedalaman tak pernah membeli akurasi; di dua task yang akurasinya bisa dihargai ia
+  memakan 26 poin (Sudoku) dan 5,7 poin (ARC); di Maze hanya sisi energinya yang bisa dilaporkan (+3%).
+- Kontribusi metodologis naik jadi **tiga jebakan**: biaya evaluasi tumbuh dengan kedalaman; screen
+  skala-kecil menempatkan pemenang terakhir; **metrik proksi wajib diadu baseline sepele**. Yang ketiga
+  kini jadi aturan repo (CLAUDE.md butir 9 baru).
+
+### Revisi lain yang diterapkan (tanpa run baru)
+
+R1-M1 "dua instrumen" dikoreksi: CodeCarbon dan `nvidia-smi` membaca sensor NVML yang sama, jadi
+kesepakatan 98,8-99,95% membatasi galat integrasi 1 Hz, bukan akurasi sensor. Versi driver
+(595.71.05 -> 595.84) dan setelan CodeCarbon (3.2.8, `measure_power_secs=5`, `tracking_mode=machine`)
+masuk Tabel 2. R1-M2: cost model divalidasi ke 49 run (`validate_costmodel.py`): over-predict Sudoku
++15..+24%, meleset >90% di Maze/ARC (seq 900 lawan 81), b naik ke 0,94 pada subset P*D<50, fit dua
+eksponen P^0,82 D^0,92; klaim "validated tool for planning" dicabut dan dibatasi ke rezim ukurnya.
+R1-M3: resolusi E(tau) = grid checkpoint (~16 Wh Sudoku, 12-14 Wh Maze/ARC), dinyatakan sebagai batas
+atas terkuantisasi. R1-M4: paragraf "what is and is not measured" (GPU-only; CPU/RAM adalah model;
+faktor grid statis; energi net melacak wall time pada plateau 140-175 W). R2-M2: sensitivitas estimator
+(`estimator_sensitivity.py`) 5,67/5,40/5,52/3,29 poin dengan Welch p 0,0122/0,0200/0,0164/0,0241 dan
+permutasi eksak 0,0159/0,0079/0,0079/0,0079 (lantai 0,0079) dilaporkan di Results. R2-M5: lima rujukan
+2026 terverifikasi DataCite ditambahkan (Schwethelm iso-depth phi=0,46; DeepLoop; Ingolfsson quantizing
+TRM/HRM tiga task yang sama; Jim compression cell-vs-exact; Ren mekanistik HRM), dengan pernyataan apa
+yang ditambahkan pengukuran joule ini. R2-M7: `PREREGISTRATION.md` kini ikut paket Zenodo. Minor:
+langkah ACT 9,6-14,9 per contoh, subset 512 = 512 pertama (bukan acak), laju family-wise seluruh naskah
+(15 kontras, alpha 0,0033: Sudoku dan baseline lolos, ARC tidak), Maze +3% lawan D9 tetapi +7% lawan D18,
+kontras lebar ketiga (h768 vs h256, p=0,0046) masuk Tabel A.1.
+
+Naskah 45 halaman, 0 error, abstrak 241 kata, 56 sitasi, nol referensi menggantung.
+
+### Yang TIDAK bisa dijawab tanpa run baru, dan sudah dipra-registrasi
+
+`prereg_BM.md` (dokumen terpisah, di-commit bersama entri ini, SEBELUM run apa pun): 18 run terkunci,
+yakni D36 dengan gradient accumulation di ARC (5) dan Sudoku (3) untuk membuang konfon batch, baseline
+non-rekursif iso-compute di ARC (5), dan ulangan dengan logging prediksi per-instance (5) supaya subset
+512 bisa dibelah jadi separuh-seleksi dan separuh-pelaporan. Kontras yang ditargetkan, uji, dan komitmen
+melaporkan hasil apa pun, termasuk **pencabutan klaim 5,7 poin ARC bila signifikansinya hilang**, ada di
+dokumen itu. Perkiraan 34 jam GPU. Bila penulis memilih submit lebih dulu, keterbatasan ini sudah
+tertulis di Threats.

@@ -1,13 +1,13 @@
 # ctrm — a cross-task regime map for tiny recursive models
 
-Code and analysis for the manuscript *"When recursion depth pays for its energy: a cross-task regime map for tiny recursive models"* (target:
+Code and analysis for the manuscript *"The energy cost of recursion depth in tiny recursive models"* (target:
 *Sustainable Computing: Informatics and Systems*).
 
 The package maps the **energy–accuracy frontier of recursion depth versus parameter count** for Tiny
 Recursive Models on symbolic reasoning, under a fixed compute/energy budget, using
 **Joules-to-target-accuracy** as the primary metric on a single consumer GPU (NVIDIA RTX 5060 Ti,
-16 GB). Framing is Green AI (efficiency frontier and cross-task regime map), not a forecasting scaling
-law. Every empirical number in the manuscript traces to a run artefact: the summary tables, 1 Hz power series and CodeCarbon emissions are in `data/` here, and the per-step learning curves (`progress_*.jsonl`) are in the Zenodo archive
+16 GB). Framing is Green AI (what a design knob costs in joules), not a forecasting scaling
+law. Every empirical number in the manuscript traces to a run artefact: the summary tables, 1 Hz power series and CodeCarbon emissions are in `data/` here, and the per-step learning curves (`progress_*.jsonl`) are in the Zenodo archive.
 
 **Scale of the study.** 91 runs carry a per-run energy record, totalling **18.6 kWh** of measured GPU
 energy. The **49 faithful-recipe runs** that produce every reported result account for **16.1 kWh**; the
@@ -35,6 +35,7 @@ LICENSE                 MIT (our code)
 THIRD_PARTY_LICENSES.md Licences of the vendored third-party works
 requirements.txt        Python dependencies (torch cu128 for Blackwell GPUs)
 PROTOCOL.md             Full experimental + energy-measurement protocol
+PREREGISTRATION.md      Pre-registration entries for the two seed extensions (verbatim, with commit)
 vendor/
   TinyRecursiveModels/  upstream TRM source, pinned at c011037, PRISTINE (MIT, Samsung)
   patches/              our 2 changes to it, kept separate (progress logging + AdamW shim)
@@ -111,35 +112,26 @@ All uncertainties are the **sample** standard deviation (ddof=1) over three seed
   seeds (p = 0.14 at n = 3) to five (EXPERIMENT_LOG phase AW). D9 matches D36's best accuracy on
   155 ± 82 Wh against D36's 278 Wh (every seed reaches it; four of five below D36's budget, 81-160 Wh, one needs 291 Wh; 44% saving on average).
 - **Maze-Hard, depth axis (h256, FIVE seeds), token accuracy, best checkpoint** (exact = 0):
-  D9 = 86.66 ± 0.18, D18 = 86.76 ± 0.09, D36 = 86.54 ± 0.29 %. **Null**: no contrast approaches
-  significance (p = 0.42, 0.16, 0.31; ANOVA F(2,12) = 1.59, p = 0.24). The metric has saturated: the seed-mean
-  curve of every depth stops improving by its fourth of 25 checkpoints; the shallower settings then drift
-  down while the deepest plateaus; the deepest spends 3% more energy (324 vs 314 Wh) for no gain.
-- **Cross-task verdict.** The depth effect never changes sign; its size tracks how much room the
-  task's metric still leaves. Where the metric discriminates (Sudoku exact, 38 points of headroom; ARC
-  token, 64) shallow recursion wins, by 26 and 5.7 points; where it has saturated (Maze token, 13 points
-  of headroom, all depths within 0.3 points) depth changes nothing and only costs energy.
-## Reproducing
-1. Build the environment: `code/rebuild_env.sh` (copies the vendored TRM source from `vendor/`, applies
-   the two patches in `vendor/patches/`, creates a `cu128` PyTorch venv, and builds the augmented
-   Sudoku dataset with the test split truncated to 512). Install `requirements.txt`. Set `REPO`,
-   `ENV_DIR` and `VENDOR` if the defaults (package root, `<root>/trm-env`, `<root>/vendor`) do not suit.
-   Maze-Hard and ARC-AGI-1 are built with the upstream builders, then truncated the same way:
-   `python dataset/build_maze_dataset.py --output-dir data/maze-aug` (1000 mazes x 8 dihedral
-   augmentations) and `python dataset/build_arc_dataset.py --output-dir data/arc1-aug1k-e512
-   --subsets training evaluation --num-aug 1000` with the raw tasks from `vendor/arc-agi-1-raw/`, followed
-   by the same 512-instance test truncation as `rebuild_env.sh` applies to Sudoku.
-2. Faithful-recipe runs: `run_recipe.py` reads env vars `TRM_DIR/HIDDEN/DEPTH/BATCH/STEPS/SEED/DATA/
-   OUT_DIR/NEVAL/EMA`, plus `ARCH=transformers_baseline` for the non-recursive baseline (h512, 8 layers,
-   batch 192, 100k steps) and `GROUPS=3080` for ARC-AGI-1 and emits, per run, `progress_<tag>.jsonl` (train loss/step + eval/checkpoint),
-   `pw_<tag>.csv` (1 Hz power), `emissions_<tag>.csv` (CodeCarbon), and a self-describing summary row.
-3. Significance: `stats_table.py` reproduces every Welch t / one-way ANOVA / Bonferroni number in the
-   paper from the per-task summary CSVs, and writes `stats_table_contrasts.csv`,
-   `stats_table_anova.csv` and the LaTeX table. (`sig_test.py` is the older pilot-only script: it reads
-   `budget_out/` and does not reproduce the reported figures.)
-4. Run and energy totals: `reconcile_totals.py --data-root data` regenerates the 49/91-run and
-   16.1/18.6 kWh aggregates and the per-run cross-validation ranges.
-5. Calibration and pilot: see `PROTOCOL.md` §8 and §11.
+  D9 = 86.66 ± 0.18, D18 = 86.76 ± 0.09, D36 = 86.54 ± 0.29 %. **Null measurement, not a null effect.**
+  On the same 512-instance subset, copying the input already scores **87.51%** token accuracy (path cells
+  are 12.5% of a 30x30 maze), so every Maze run sits BELOW the trivial baseline and the metric does not
+  measure task learning at this budget. No contrast approaches significance (p = 0.42, 0.16, 0.31; ANOVA
+  F(2,12) = 1.59, p = 0.24). What the grid does establish: the deepest setting spends 3% more energy than
+  the shallowest and 7% more than the mid-depth setting (324 vs 314 vs 303 Wh) for nothing measurable.
+- **Trivial baselines** (`code/trivial_baselines.py`, same per-sequence metric as the training loop):
+  Sudoku exact 0.00% (majority and copy-input), ARC token 25.00% / 25.00%, Maze token 50.03% / **87.51%**.
+- **Cross-task verdict.** Added recursion depth never bought accuracy on any task measured. Where accuracy
+  could be priced (Sudoku exact, ARC token above baseline) shallow recursion wins by 26 and 5.7 points and
+  reaches a given accuracy on 161 vs 340 Wh and 155 vs 278 Wh. Where it could not be priced (Maze token,
+  below its trivial baseline) the deepest setting only costs 3% more. The paper reports two measured
+  points and one null measurement; it does NOT claim a regime map across tasks.
+- **Checkpoint-estimator sensitivity** (`code/estimator_sensitivity.py`): the ARC D9-vs-D36 gap is 5.7,
+  5.4, 5.5 and 3.3 points under the best, final, last-five-mean and median rules, with exact permutation
+  p between 0.008 and 0.016 (resolution floor 0.008 at n = 5).
+- **Cost-model validation** (`code/validate_costmodel.py`): the microbenchmark fit predicts realised
+  per-step energy within +15..+24% on Sudoku but is off by more than 90% on Maze and ARC (sequence length
+  900 vs the microbenchmark's 81); b rises to 0.94 on the sub-50 configurations; two-exponent fit
+  J ~ P^0.82 D^0.92. Use it only within the regime it was measured in.
 
 ## Known limitations recorded in the data
 - The h768 x D_eff=36 microbenchmark cell ran out of memory on the 16 GB card (Table 1 of the manuscript);
