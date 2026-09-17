@@ -82,10 +82,52 @@ def anova(groups):
 
 
 # ---------- data ----------
-def load(rel, metric):
-    """{D_eff atau hidden: [nilai per seed]} dari satu recipe_summary.csv."""
+MIN_WALL_S = 1000.0   # run faithful terpendek yang sah > 6000 s; run gagal fase BM = 12 s
+
+
+WARN = []   # peringatan higienis data; dicetak ke stderr dan ke berkas laporan
+
+
+def load(rel, metric, expect=None):
+    """Baris summary yang SAH saja, dari satu recipe_summary.csv.
+
+    run_recipe.py meng-APPEND ke berkas ini, jadi run yang gagal atau diulang MENUMPUK baris.
+    Dibuktikan pada audit fase BR atas salinan data nyata:
+      - satu baris run gagal disisipkan ke arc_depth_out -> kontras ARC p 0,0122 menjadi 0,0920,
+        yakni klaim utama naskah lenyap, tanpa satu pun peringatan;
+      - dua baris duplikat (tag sama) -> p 0,0122 menjadi 0,00087, signifikansi palsu.
+    Keduanya senyap. Karena itu penyaringan dilakukan di sini, bukan diserahkan ke kedisiplinan.
+
+    Juga memeriksa header: runner sekarang menulis 16 kolom (ada `accum`, `eff_batch`) sedangkan
+    berkas lama berheader 14 kolom. Menempelkan baris format baru ke berkas format lama membuat
+    DictReader menggeser kolom dan angka terbaca sebagai nilai kolom lain, juga senyap.
+    """
     path = os.path.join(ROOT, rel)
-    rows = list(csv.DictReader(open(path)))
+    with open(path) as fh:
+        rdr = csv.DictReader(fh)
+        header = list(rdr.fieldnames or [])
+        raw = list(rdr)
+    ncol = len(header)
+    keep, dropped, dup = {}, 0, 0
+    for r in raw:
+        if len(r) != ncol or any(v is None for v in r.values()):
+            dropped += 1
+            continue
+        try:
+            if float(r.get("wall_s", 0)) < MIN_WALL_S:
+                dropped += 1
+                continue
+        except (TypeError, ValueError):
+            dropped += 1
+            continue
+        if r["tag"] in keep:
+            dup += 1
+        keep[r["tag"]] = r          # tag sama -> baris terakhir menang
+    rows = list(keep.values())
+    if dropped or dup:
+        WARN.append(f"{rel}: {dropped} baris cacat dibuang, {dup} duplikat tag diambil yang terakhir")
+    if expect is not None and len(rows) != expect:
+        WARN.append(f"**{rel}: {len(rows)} run sah, DIHARAPKAN {expect}. Tabel ini TIDAK SAH.**")
     return rows, path
 
 
@@ -99,9 +141,9 @@ def cells(rows, key, metric, filt=lambda r: True):
 
 
 def main():
-    sud, sud_p = load("recipe_out/recipe_summary.csv", "best_exact_pct")
-    mz, mz_p = load("maze_depth_out/recipe_summary.csv", "best_token_pct")
-    ar, ar_p = load("arc_depth_out/recipe_summary.csv", "best_token_pct")
+    sud, sud_p = load("recipe_out/recipe_summary.csv", "best_exact_pct", expect=18)
+    mz, mz_p = load("maze_depth_out/recipe_summary.csv", "best_token_pct", expect=15)
+    ar, ar_p = load("arc_depth_out/recipe_summary.csv", "best_token_pct", expect=15)
 
     sud_depth = cells(sud, "D_eff", "best_exact_pct",
                       lambda r: r["hidden"] == "512" and "recipe" in r["tag"])
@@ -200,3 +242,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+    if WARN:
+        import sys
+        print("\n!! PERINGATAN HIGIENIS DATA (tabel di atas hanya sah bila daftar ini kosong):",
+              file=sys.stderr)
+        for w in WARN:
+            print("   -", w, file=sys.stderr)
+        sys.exit(2)

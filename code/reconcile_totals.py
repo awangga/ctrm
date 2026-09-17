@@ -30,6 +30,16 @@ SUMMARIES = [
     ("converge_out/converge_summary_h128_d18_aug.csv",   "pilot",    "convergence probe D18 (aug)"),
     ("maze_out/maze_summary.csv",                        "pilot",    "Maze toy sweep"),
     ("budget_out/energy_xval.csv",                       "pilot",    "budget replication seeds 3-4"),
+    # --- fase BM (18 run pra-registrasi). Daftar ini TETAP, tanpa glob: folder yang lupa
+    # didaftarkan akan tertinggal diam-diam dari agregat (temuan fase BR). `accum_check_out`
+    # diberi rezim tersendiri karena ia verifikasi patch, bukan run yang menopang hasil, dan
+    # kesepakatannya (98,79-98,83%) berada di bawah lantai rezim faithful.
+    # `arc_baseline_FAILED_rope/` sengaja TIDAK didaftarkan: lima run mati 12 detik tanpa data.
+    ("arc_d36_accum_out/recipe_summary.csv",             "faithful", "ARC D36 batch efektif dipulihkan (BM A1)"),
+    ("sudoku_d36_accum_out/recipe_summary.csv",          "faithful", "Sudoku D36 batch efektif dipulihkan (BM A2)"),
+    ("arc_baseline_out/recipe_summary.csv",              "faithful", "baseline non-rekursif ARC (BM B)"),
+    ("arc_d9_preds_out/recipe_summary.csv",              "faithful", "ARC D9 dgn prediksi per-instance (BM C)"),
+    ("accum_check_out/recipe_summary.csv",               "verifikasi","verifikasi patch akumulasi gradien"),
 ]
 
 # Run yang TIDAK punya catatan energi per-run dan karenanya di luar total energi.
@@ -110,7 +120,10 @@ def main():
     out = args.out or os.path.join(root, subdir, "run_energy_reconciliation.md")
 
     recs = collect(root)
-    tot = {c: dict(n=0, wh=0.0, ag=[]) for c in ("faithful", "pilot")}
+    # Kategori diturunkan dari SUMMARIES, JANGAN ditulis tetap: rezim baru (mis. "verifikasi"
+    # pada fase BM) pernah hilang diam-diam dari agregat karena daftarnya di-hardcode.
+    CATS = list(dict.fromkeys(c for _, c, _ in SUMMARIES))
+    tot = {c: dict(n=0, wh=0.0, ag=[]) for c in CATS}
     for r in recs:
         t = tot[r["cat"]]
         t["n"] += r["n"]
@@ -130,13 +143,13 @@ def main():
 
     lines += ["", "## Agregat", "",
               "| rezim | n run | energi | cross-val CodeCarbon vs nvidia-smi |", "|---|---:|---:|---|"]
-    for c in ("faithful", "pilot"):
+    for c in CATS:
         t = tot[c]
         rng = f"{min(t['ag']):.2f}–{max(t['ag']):.2f}%" if t["ag"] else "-"
         lines.append(f"| {c} | {t['n']} | {t['wh']:.1f} Wh = {t['wh']/1000:.2f} kWh | {rng} |")
     gn = sum(t["n"] for t in tot.values())
     gw = sum(t["wh"] for t in tot.values())
-    gag = tot["faithful"]["ag"] + tot["pilot"]["ag"]
+    gag = [a for c in CATS for a in tot[c]["ag"]]
     lines.append(f"| **TOTAL** | **{gn}** | **{gw:.1f} Wh = {gw/1000:.2f} kWh** | "
                  f"{min(gag):.2f}–{max(gag):.2f}% |")
 
