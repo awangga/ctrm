@@ -18,6 +18,15 @@ import csv, datetime, glob, json, os, re
 IDLE_W = 4.7
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+
+def _mean_best_token(folder, deff):
+    rows = [r for r in csv.DictReader(open(os.path.join(HERE, folder, "recipe_summary.csv")))
+            if r["D_eff"] == deff]
+    return round(sum(float(r["best_token_pct"]) for r in rows) / len(rows), 2)
+
+
+ARC_G400_D36_BEST = _mean_best_token("arc_d36_g400_out", "36")   # 62.52 pada fase BS
+
 # (folder, metrik yang dilaporkan, daftar target beserta asalnya)
 TASKS = [
     ("recipe_out",     "Sudoku-Extreme", "all/exact_accuracy", [
@@ -29,9 +38,19 @@ TASKS = [
     ("maze_depth_out", "Maze-Hard",      "all/accuracy", [
         (86.80, "best token accuracy of D_eff=18"),
     ]),
-    ("arc_depth_out",  "ARC-AGI-1",      "all/accuracy", [
-        (30.59, "best token accuracy of D_eff=36"),
-        (33.30, "best token accuracy of D_eff=18"),
+    # REKAMAN SAJA: subset lama arc1-aug1k-e512 ternyata augmentasi SATU task ARC (fase BS),
+    # jadi baris ini tidak dipakai untuk klaim. Targetnya berasal dari subset lama itu.
+    ("arc_depth_out",  "ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)", "all/accuracy", [
+        (30.59, "best token accuracy of D_eff=36, OLD e512 subset"),
+        (33.30, "best token accuracy of D_eff=18, OLD e512 subset"),
+    ]),
+    # Subset sah arc1-aug1k-g400 (400 task): hanya D9 dan D36. Target = rerata akurasi token
+    # terbaik D36 pada subset ini, dihitung dari summary CSV (bukan dipatok).
+    ("arc_d9_g400_out",  "ARC-AGI-1 (g400)", "all/accuracy", [
+        (ARC_G400_D36_BEST, "best token accuracy of D_eff=36, g400 subset"),
+    ]),
+    ("arc_d36_g400_out", "ARC-AGI-1 (g400)", "all/accuracy", [
+        (ARC_G400_D36_BEST, "best token accuracy of D_eff=36, g400 subset"),
     ]),
     ("maze_real_out",  "Maze-Hard",      "all/accuracy", []),
 ]

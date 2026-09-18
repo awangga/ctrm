@@ -2,12 +2,15 @@
 
 Every batch of runs added after the first grids was pre-registered before it was launched: the run
 count, the contrast it targeted and the commitment to report whatever came out were written down and
-committed first, and the analysis was run once, after the last run finished. Three such batches exist.
+committed first, and the analysis was run once, after the last run finished. Three such batches exist;
+the third carries five amendments, the last of which locked a further ten-run rerun (phase BS).
 
 - **ARC-AGI-1, three seeds to five** (phase AW of the working journal, commit `6ad7c3b`). Reproduced
   **verbatim below**, in Indonesian, the language of the journal. Outcome reported in the manuscript and
-  in `README.md`: D9 leads D36 by 5.7 token points, Welch p = 0.012, which clears the Bonferroni
-  threshold of 0.0167.
+  in v5: D9 led D36 by 5.7 token points, Welch p = 0.012. **That outcome is withdrawn**: the ARC
+  evaluation subset these runs were scored on (`arc1-aug1k-e512`) turned out to hold augmentations of a
+  single task, so it measured nothing at task level (amendment 5 below). The entry stays reproduced
+  because a pre-registration is kept as committed; the runs it fixed now contribute energy only.
 - **Maze-Hard, three seeds to five** (phases AF and AG of the journal: AF fixes the six runs and the
   commitment, AG reports the outcome). Not reproduced here, because the entry is written in the
   superseded framing this package no longer uses, and because the accuracy outcome it targeted has since
@@ -15,10 +18,25 @@ committed first, and the analysis was run once, after the last run finished. Thr
   on the same 512-instance subset while every trained Maze configuration reaches 86.5-86.8%, so the Maze
   grid is now reported as a **null measurement** and contributes only its energy comparison. The
   pre-registered commitment is what forces that correction to be reported rather than quietly dropped.
-- **Phase BM, 18 runs** answering the reviewer requests that need GPU time (deepest cell rerun with
-  gradient accumulation, non-recursive control on ARC-AGI-1, per-instance evaluation logging):
-  `prereg_BM.md` in this package, with amendment 1, both written before any run was launched. The batch
-  was **still running** when this version was assembled, so it has no outcome to report here.
+- **Phase BM, 18 runs** answering the reviewer requests that need GPU time: `prereg_BM.md` in this
+  package, reproduced verbatim (in Indonesian) with all five amendments. Amendment 1 was written before
+  any run was launched; each later amendment was committed before the runs or analysis it governs.
+  - *Amendment 1*: effective batch of the deepest cells restored by gradient accumulation at equal epochs.
+  - *Amendment 2*: written after batch B (ARC non-recursive control) failed, before any retry.
+  - *Amendment 3*: data-hygiene guards added to the analysis script, with a disclosure that part of its
+    output was glimpsed while testing those guards on incomplete data; the script was already final and
+    was not changed afterwards.
+  - *Amendment 4*: the Bonferroni family for the ARC baseline fixed as a family of its own, before results.
+  - *Amendment 5* (phase BS): the ARC evaluation subset replaced by `arc1-aug1k-g400` (400 tasks, 419
+    unaugmented examples, built by `code/make_group_eval.py`); ten runs locked (ARC D9 and D36, five seeds
+    each, D36 at matched effective batch); the trivial baselines recomputed before any effect was read;
+    batch B cancelled; and a commitment to withdraw the ARC claim if the contrast vanished.
+
+  Outcomes, each analysed once: Sudoku D36 at matched batch falls to 31.71% (the depth gap widens from 26
+  to about 31 points); on the valid ARC subset D9 leads D36 by 1.20 token points (63.72% vs 62.52%, Welch
+  p = 6.1e-6, exact permutation p = 0.0079, no overlap between seeds); the ARC runs of batches A1 and C
+  were scored on the defective subset and support no claim; batch B was not rerun, so the non-recursive
+  control exists on Sudoku only. See `README.md` for the full reporting.
 
 The working journal itself (`EXPERIMENT_LOG.md`, every phase from A onward, in Indonesian) **is**
 redistributed: it ships at the root of the public code mirror of this package. Read it as a laboratory
@@ -31,7 +49,9 @@ for current claims, this file for what was fixed before each batch was launched,
 chronology of how the two came apart. Of the journal's entries, the ones that bind a reported result are
 those listed above.
 
-**Editorial note (September 2026).** The entry below is reproduced verbatim as it was committed, so it
+**Editorial note (September 2026).** The entry below fixed runs whose ARC accuracies are now withdrawn
+(see amendment 5 of `prereg_BM.md`); it is kept as the record of what was pre-registered, not as support
+for any current result. It is reproduced verbatim as it was committed, so it
 still uses the framing that was current when it was written, including the phrase "regime map" and the
 expectation that ARC-AGI-1 would become a third regime. That framing was later retracted: a
 trivial-baseline check showed that the Maze-Hard token metric never clears a copy-the-input predictor,

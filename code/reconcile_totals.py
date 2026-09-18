@@ -40,6 +40,9 @@ SUMMARIES = [
     ("arc_baseline_out/recipe_summary.csv",              "faithful", "baseline non-rekursif ARC (BM B)"),
     ("arc_d9_preds_out/recipe_summary.csv",              "faithful", "ARC D9 dgn prediksi per-instance (BM C)"),
     ("accum_check_out/recipe_summary.csv",               "verifikasi","verifikasi patch akumulasi gradien"),
+    # --- fase BS: kontras kedalaman ARC pada subset evaluasi SAH (arc1-aug1k-g400, 400 task)
+    ("arc_d9_g400_out/recipe_summary.csv",               "faithful", "ARC D9 subset sah 400 task (BS)"),
+    ("arc_d36_g400_out/recipe_summary.csv",              "faithful", "ARC D36 accum subset sah 400 task (BS)"),
 ]
 
 # Run yang TIDAK punya catatan energi per-run dan karenanya di luar total energi.

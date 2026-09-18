@@ -114,3 +114,166 @@ prediksi per-instance) dijalankan pada sel ARC D9 seed 0-4, dan run A1 juga meny
 per-instance, sehingga pembelahan subset 512 bisa dilakukan pada kedua lengan kontras.
 
 **Jumlah run tetap 18.** Ambang uji, kontras yang ditargetkan, dan komitmen pelaporan tidak berubah.
+
+---
+
+## AMANDEMEN 2 (17 September 2026, ditulis SETELAH batch B gagal, SEBELUM diulang)
+
+**Kejadian.** Kelima run batch B (baseline non-rekursif ARC) mati setelah 12 detik dan tidak
+menghasilkan data apa pun. Sebabnya murni konfigurasi, bukan hasil:
+`config/arch/transformers_baseline.yaml` mengunci `num_heads: 12`, sehingga pada `hidden=256`
+dimensi per-head menjadi 21 (ganjil). RoPE membelah dimensi itu lewat `rotate_half`, jadi nilai
+ganjil mustahil. Baseline Sudoku yang sudah berjalan memakai `hidden=512`, head_dim 42, dan karena
+itu lolos. Bukti kegagalan disimpan di `arc_baseline_FAILED_rope/` dan folder itu sengaja dinamai
+agar `analyze_BM.py` tidak menemukannya.
+
+**Perubahan.** Batch B diulang dengan `HEADS=8` sehingga head_dim menjadi 32. Nilai 8 dipilih karena
+itulah jumlah head yang dipakai TRM, sehingga baseline ARC justru lebih sebanding dengan TRM
+daripada bila memakai 12.
+
+**Yang TIDAK berubah.** Jumlah run tetap 5 seed. Kontras yang ditargetkan tetap sama: ARC `D9` (TRM)
+lawan baseline non-rekursif pada compute yang sama. Uji tetap Welch dua-sisi + permutasi eksak
+dengan ambang Bonferroni 0,0167 per sumbu. Analisis tetap dijalankan **sekali** setelah seluruh run
+selesai. Komitmen pelaporan apa adanya tetap berlaku, termasuk bila baseline mengalahkan TRM dangkal.
+
+**Mengapa ini bukan penyimpangan protokol.** Run yang gagal tidak menghasilkan satu pun angka, jadi
+tidak ada hasil yang dilihat lalu dijadikan dasar mengubah desain. Amandemen ini ditulis dan
+di-commit sebelum run ulang diluncurkan, sesuai aturan CLAUDE.md #7.
+
+**Baseline Sudoku tidak diulang.** Ia berjalan sah dengan 12 head dan hasilnya sudah dilaporkan di
+naskah. Karena itu `HEADS` dibiarkan kosong secara default di `run_recipe.py`, supaya run lama tetap
+dapat direproduksi persis. Perbedaan jumlah head antara baseline Sudoku (12) dan baseline ARC (8)
+akan dinyatakan di naskah.
+
+---
+
+## AMANDEMEN 3 (17 September 2026): pengerasan higienis data pada skrip analisis, dan satu pengungkapan
+
+**Apa yang diubah.** `analyze_BM.py` diberi penjagaan higienis data:
+1. baris summary dengan `wall_s < 1000` dibuang (run gagal fase BM berdurasi 12 detik);
+2. baris duplikat per tag dideduplikasi, diambil yang terakhir, karena `run_recipe.py` meng-APPEND
+   ke `recipe_summary.csv` sehingga run ulang menumpuk baris;
+3. jumlah run tiap batch diwajibkan (A1 5, A2 3, B 5) dan ketidaksesuaian dicetak sebagai peringatan
+   di kepala laporan;
+4. tag batch C yang jumlah checkpointnya bukan 25 ditolak, sehingga run yang masih berjalan atau
+   yang grid stepnya tercampur tidak ikut;
+5. lantai uji permutasi ikut dicetak, karena pada n=3 lawan 3 hanya ada C(6,3)=20 pembelahan sehingga
+   p terkecil yang mungkin adalah 0,10 dan tanpa keterangan itu mudah dibaca sebagai bukti null;
+6. kegagalan satu kontras tidak lagi membatalkan seluruh laporan;
+7. berkas keluaran mengikuti `data_root`, tidak lagi menimpa laporan repo.
+
+**Mengapa.** Audit fase BR membuktikan dengan percobaan langsung bahwa lima baris run gagal yang
+menumpuk di summary batch B mengubah hasilnya dari `+1,87 poin, p=0,2707, gagal` menjadi
+`+19,07 poin, p=0,0090, LOLOS`. Baris sampah dapat **membalik kesimpulan menjadi signifikan palsu**,
+dan skrip tidak mengeluh sama sekali. Penjagaan ini melindungi pra-registrasi, bukan melonggarkannya.
+
+**Yang TIDAK berubah.** Tidak ada uji, ambang, kontras, arah hipotesis, atau definisi metrik yang
+diubah. Welch dua-sisi, permutasi eksak, Bonferroni 0,05/3 per sumbu, checkpoint terbaik, semuanya
+tetap. Komitmen melaporkan hasil apa pun tetap berlaku.
+
+**Pengungkapan.** Saat menguji penjagaan itu, skrip dijalankan atas data yang belum lengkap dan
+**keluaran bagian A1 sebagian terlihat**. Skrip sudah dalam bentuk final saat itu dan tidak diubah
+lagi sesudahnya; laporan sementara yang tertulis langsung dihapus. Hal ini dicatat di sini supaya
+rekamannya lengkap: analisis pra-registrasi yang sah adalah yang dijalankan **sekali** setelah
+seluruh 18 run selesai, dan itu belum terjadi.
+
+---
+
+## AMANDEMEN 4 (17 September 2026): definisi keluarga Bonferroni untuk baseline ARC, dikunci SEBELUM hasil
+
+**Mengapa amandemen ini ada.** Audit fase BR menemukan bahwa keluarga Bonferroni di `stats_table.py`
+ditulis tangan. Batch B akan menambahkan kontras baru (TRM lawan baseline non-rekursif di ARC), dan
+**cara mengelompokkannya menentukan ambangnya**:
+
+- bila dilipat ke keluarga "ARC depth" yang sudah ada, keluarga itu menjadi 6 kontras dan ambangnya
+  0,05/6 = **0,0083**, sehingga kontras kedalaman ARC yang sekarang p=0,0122 akan **GUGUR**;
+- bila menjadi keluarga sendiri, ambang keluarga kedalaman tetap 0,0167.
+
+Memutuskan hal ini **setelah** melihat hasil adalah p-hacking lewat definisi keluarga. Karena itu
+diputuskan sekarang, sebelum batch B dijalankan ulang dan sebelum analisis dijalankan.
+
+**Keputusan: baseline ARC menjadi keluarga sendiri, "ARC baseline".**
+
+Alasannya preseden, bukan kenyamanan. Struktur keluarga yang sudah berlaku di naskah:
+
+| keluarga | kontras | ambang |
+|---|---:|---:|
+| Sudoku depth | 3 | 0,0167 |
+| Sudoku width | 3 | 0,0167 |
+| **Sudoku baseline** | **3** | **0,0167** |
+| Maze depth | 3 | 0,0167 |
+| ARC depth | 3 | 0,0167 |
+
+Baseline non-rekursif Sudoku **sudah** menjadi keluarga terpisah dari kedalaman Sudoku sejak fase
+sebelumnya. Memperlakukan baseline ARC dengan cara berbeda dari baseline Sudoku tidak punya dasar,
+dan keduanya memang menjawab pertanyaan berbeda: "apakah kedalaman berbayar" lawan "apakah rekursi
+berbayar sama sekali".
+
+**Konsekuensi yang diterima di muka.** Total kontras naskah menjadi 18 (dari 15), dan ambang
+gabungan seluruh-naskah untuk pembaca yang menuntut satu keluarga menjadi 0,05/18 = 0,0028 (dari
+0,0033). Klaim mana pun yang lolos hari ini dan tidak lolos pada ambang baru akan dinyatakan apa
+adanya.
+
+**Yang TIDAK berubah.** Uji tetap Welch dua-sisi + permutasi eksak. Ambang per sumbu tetap 0,05/3.
+Kontras yang ditargetkan tetap seperti butir 2 pra-registrasi. Analisis tetap dijalankan sekali
+setelah seluruh run selesai.
+
+---
+
+## AMANDEMEN 5 (17 September 2026): subset evaluasi ARC diperbaiki, kontras penentu dijalankan ulang
+
+Ditulis dan di-commit **SEBELUM** satu pun run baru diluncurkan.
+
+### Cacat yang ditemukan
+
+`make_small_eval.py` memotong test split dengan `[:N]`. Itu benar untuk Sudoku-Extreme dan Maze-Hard,
+yang test split-nya tidak diaugmentasi, tetapi **salah untuk ARC-AGI-1**, yang test split-nya
+diaugmentasi sekitar 1001 contoh per grup. Akibatnya `arc1-aug1k-e512` berisi 512 baris yang seluruhnya
+jatuh di grup 0, yaitu **satu task ARC beserta augmentasinya**.
+
+Bukti terukur, dihitung langsung dari berkas dataset:
+
+| | `arc1-aug1k-e512` (lama) | `arc1-aug1k-g400` (baru) |
+|---|---:|---:|
+| contoh | 512 | 419 |
+| label unik | **72** | **419** |
+| input unik | 453 | 419 |
+| posisi berlabel per contoh | **selalu 48** | 3 sampai 900, median 159 |
+| konsistensi indeks | **rusak** | konsisten |
+
+Seluruh **25 run ARC** proyek ini (`arc_depth_out` 15, `arc_d36_accum_out` 5, `arc_d9_preds_out` 5)
+memakai subset lama. Sudoku (21 run) dan Maze (16 run) memakai subset yang sehat dan tidak terpengaruh.
+
+### Yang dikunci sekarang
+
+1. **Subset baru:** `data/arc1-aug1k-g400`, dibangun `make_group_eval.py`, mengambil puzzle PERTAMA
+   setiap grup, yakni contoh asli tanpa augmentasi. 400 grup, 400 puzzle, 419 contoh, 419 label unik.
+   Split train **tidak diubah**, sehingga `GROUPS=3080` dan seluruh konfigurasi pelatihan tetap sama;
+   yang berubah hanya apa yang dievaluasi.
+2. **Sepuluh run, dikunci:** ARC `D_eff=9` lima seed (batch 48, accum 1) dan ARC `D_eff=36` lima seed
+   (micro-batch 24 x accum 2 = batch efektif 48). Alokasi D36 memakai akumulasi gradien, mengikuti
+   Amandemen 1, supaya kontras menguji kedalaman saja dan bukan kedalaman bercampur batch.
+   Tidak lebih, tidak kurang. Perkiraan 19 jam GPU.
+3. **Kontras yang ditargetkan:** ARC `D9` lawan `D36`, akurasi token pada checkpoint terbaik.
+   Uji: Welch dua-sisi + permutasi eksak, ambang Bonferroni per sumbu 0,05/3 = 0,0167.
+4. **Baseline sepele dihitung ulang** pada subset baru sebelum efek apa pun dibaca (aturan repo #9).
+   Angka 25,00% yang ada sekarang berasal dari subset lama dan tidak boleh dipakai.
+5. **Batch B dibatalkan.** Baseline non-rekursif ARC tidak dijalankan ulang. Konsekuensinya kontrol
+   non-rekursif hanya ada di Sudoku, dan itu dinyatakan sebagai keterbatasan di naskah.
+
+### Komitmen pelaporan, apa pun hasilnya
+
+- Bila kontras ARC **bertahan** pada subset yang sah, klaim dilaporkan dengan angka baru, dan angka
+  lama dinyatakan superseded.
+- Bila kontras ARC **hilang**, klaim "5,7 poin, p=0,012" **dicabut** dari abstrak, highlights, dan
+  Results, dan ARC dilaporkan sebagai null. Naskah kemudian tinggal punya satu task dengan sumbu
+  akurasi yang bisa dihargai, yaitu Sudoku-Extreme, dan itu diterima.
+- **Apa pun hasilnya**, naskah wajib menyatakan bahwa subset evaluasi ARC yang dipakai pada seluruh
+  run sebelumnya adalah augmentasi satu task, bahwa itu ditemukan sendiri dalam audit internal, dan
+  bahwa angka ARC lama tidak menopang klaim tingkat-task.
+- Analisis dijalankan **sekali**, setelah kesepuluh run selesai.
+
+### Yang TIDAK berubah
+
+Sudoku dan Maze tidak disentuh. Aturan checkpoint terbaik tetap. Definisi metrik tetap. Struktur
+keluarga Bonferroni tetap seperti Amandemen 4. Artefak wajib per run tetap tiga plus baris summary.

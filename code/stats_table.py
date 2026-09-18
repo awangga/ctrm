@@ -152,7 +152,15 @@ def main():
     sud_base = cells(sud, "tag", "best_exact_pct", lambda r: "baseline" in r["tag"])
     base_vals = [v for vs in sud_base.values() for v in vs]
     mz_depth = cells(mz, "D_eff", "best_token_pct")
-    ar_depth = cells(ar, "D_eff", "best_token_pct")
+    # FASE BS: sumbu kedalaman ARC dibaca dari subset evaluasi yang SAH (arc1-aug1k-g400, 400 task
+    # ARC berbeda). Grid lama `arc_depth_out` dievaluasi pada `arc1-aug1k-e512`, yang ternyata
+    # SATU task ARC beserta augmentasinya (72 label unik dari 512 contoh), jadi tidak lagi dipakai
+    # untuk klaim. Pada subset sah hanya D9 dan D36 yang dijalankan ulang (Amandemen 5); D36 memakai
+    # akumulasi gradien sehingga batch efektifnya 48, sama dengan D9.
+    a9, _ = load("arc_d9_g400_out/recipe_summary.csv", "best_token_pct", expect=5)
+    a36, _ = load("arc_d36_g400_out/recipe_summary.csv", "best_token_pct", expect=5)
+    ar_depth = {"9": [float(r["best_token_pct"]) for r in a9],
+                "36": [float(r["best_token_pct"]) for r in a36]}
 
     FAM = []  # (family, label, kind, payload)
     FAM += [("Sudoku depth", r"$D_9$ vs $D_{18}$", "t", (sud_depth["9"], sud_depth["18"])),
@@ -171,9 +179,11 @@ def main():
     FAM += [("Maze depth", r"$D_{36}$ vs $D_9$", "t", (mz_depth["36"], mz_depth["9"])),
             ("Maze depth", r"$D_{36}$ vs $D_{18}$", "t", (mz_depth["36"], mz_depth["18"])),
             ("Maze depth", r"$D_{18}$ vs $D_9$", "t", (mz_depth["18"], mz_depth["9"]))]
-    FAM += [("ARC depth", r"$D_9$ vs $D_{36}$", "t", (ar_depth["9"], ar_depth["36"])),
-            ("ARC depth", r"$D_{18}$ vs $D_{36}$", "t", (ar_depth["18"], ar_depth["36"])),
-            ("ARC depth", r"$D_9$ vs $D_{18}$", "t", (ar_depth["9"], ar_depth["18"]))]
+    FAM += [("ARC depth", r"$D_9$ vs $D_{36}$", "t", (ar_depth["9"], ar_depth["36"]))]
+    # Ambang keluarga ARC DIPAKSA 0,05/3, bukan 0,05/1: desain sumbu kedalaman punya tiga tingkat,
+    # dan prinsip di atas (ambang mengikuti banyaknya kontras yang mungkin, bukan yang ditabelkan)
+    # tetap berlaku walau D18 tidak dijalankan ulang. Nilai ini juga yang dikunci Amandemen 5.
+    FAM_THR = {"ARC depth": 0.05 / 3}
 
     fam_n = {}
     for f, *_ in FAM:
@@ -182,15 +192,16 @@ def main():
     rows_out = []
     for fam, lab, _k, (x, y) in FAM:
         t, df, p, d = welch(x, y)
-        thr = 0.05 / fam_n[fam]
+        thr = FAM_THR.get(fam, 0.05 / fam_n[fam])
         rows_out.append(dict(family=fam, contrast=lab, n1=len(x), n2=len(y),
                              mean1=st.mean(x), sd1=st.stdev(x), mean2=st.mean(y), sd2=st.stdev(y),
                              t=t, df=df, p=p, cohen_d=d, bonf_thr=thr, survives=p < thr))
 
     ANO = [("Sudoku depth", [sud_depth[k] for k in ("9", "18", "36")]),
            ("Sudoku width", [sud_width[k] for k in ("256", "512", "768")]),
-           ("Maze depth", [mz_depth[k] for k in ("9", "18", "36")]),
-           ("ARC depth", [ar_depth[k] for k in ("9", "18", "36")])]
+           ("Maze depth", [mz_depth[k] for k in ("9", "18", "36")])]
+    # ARC tidak diberi ANOVA: hanya dua tingkat kedalaman pada subset sah, jadi uji omnibus tidak
+    # menambah apa pun di atas kontras Welch tunggalnya.
     ano_out = []
     for fam, gs in ANO:
         F, df1, df2, p = anova(gs)
@@ -212,6 +223,14 @@ def main():
         return rf"{m}\times 10^{{{int(e)}}}"
 
 
+    def pcell(p):
+        """p untuk SEL tabel. Notasi ilmiah wajib dibungkus $...$ karena \times di luar mode
+        matematika adalah error LaTeX; header memakai pf() karena ia sudah di dalam $...$.
+        Versi tak berbungkus pernah menghasilkan PDF yang tampak benar tetapi error di log."""
+        s = pf(p)
+        return f"${s}$" if "times" in s else s
+
+
     lines = []
     prev = None
     for r in rows_out:
@@ -225,7 +244,7 @@ def main():
             prev = r["family"]
         lines.append(rf"\quad {r['contrast']} & {r['mean1']:.2f}$\pm${r['sd1']:.2f} & "
                      rf"{r['mean2']:.2f}$\pm${r['sd2']:.2f} & {r['t']:.2f} & {r['df']:.1f} & "
-                     rf"{pf(r['p'])} & {r['cohen_d']:.2f} & {'yes' if r['survives'] else 'no'} \\")
+                     rf"{pcell(r['p'])} & {r['cohen_d']:.2f} & {'yes' if r['survives'] else 'no'} \\")
     tex = "\n".join(x for x in lines if x != "" or True)
     open(OUTP + ".tex", "w").write(tex + "\n")
 

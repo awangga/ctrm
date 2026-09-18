@@ -1,0 +1,128 @@
+task,tag,hidden,D_eff,seed,metric,target_pct,target_origin,reached,step_at_target,net_Wh_at_target,final_net_Wh
+Sudoku-Extreme,h256_d18_recipe_b192_s0,256,18,0,exact_accuracy,50,"50% exact, the headline target",no,,,506.20
+Sudoku-Extreme,h256_d18_recipe_b192_s0,256,18,0,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,506.20
+Sudoku-Extreme,h256_d18_recipe_b192_s0,256,18,0,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,506.20
+Sudoku-Extreme,h256_d18_recipe_b192_s0,256,18,0,exact_accuracy,36.26,best accuracy of D_eff=36,yes,50775,304.12,506.20
+Sudoku-Extreme,h256_d18_recipe_b192_s1,256,18,1,exact_accuracy,50,"50% exact, the headline target",no,,,503.44
+Sudoku-Extreme,h256_d18_recipe_b192_s1,256,18,1,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,503.44
+Sudoku-Extreme,h256_d18_recipe_b192_s1,256,18,1,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,503.44
+Sudoku-Extreme,h256_d18_recipe_b192_s1,256,18,1,exact_accuracy,36.26,best accuracy of D_eff=36,yes,71085,423.02,503.44
+Sudoku-Extreme,h256_d18_recipe_b192_s2,256,18,2,exact_accuracy,50,"50% exact, the headline target",no,,,499.39
+Sudoku-Extreme,h256_d18_recipe_b192_s2,256,18,2,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,499.39
+Sudoku-Extreme,h256_d18_recipe_b192_s2,256,18,2,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,499.39
+Sudoku-Extreme,h256_d18_recipe_b192_s2,256,18,2,exact_accuracy,36.26,best accuracy of D_eff=36,yes,54160,319.33,499.39
+Sudoku-Extreme,h512_d18_recipe_b192_s0,512,18,0,exact_accuracy,50,"50% exact, the headline target",yes,22000,317.17,360.49
+Sudoku-Extreme,h512_d18_recipe_b192_s0,512,18,0,exact_accuracy,49.67,best accuracy of the non-recursive baseline,yes,22000,317.17,360.49
+Sudoku-Extreme,h512_d18_recipe_b192_s0,512,18,0,exact_accuracy,50.07,best accuracy of D_eff=18,yes,22000,317.17,360.49
+Sudoku-Extreme,h512_d18_recipe_b192_s0,512,18,0,exact_accuracy,36.26,best accuracy of D_eff=36,yes,14000,201.70,360.49
+Sudoku-Extreme,h512_d18_recipe_b192_s1,512,18,1,exact_accuracy,50,"50% exact, the headline target",yes,24000,341.34,355.58
+Sudoku-Extreme,h512_d18_recipe_b192_s1,512,18,1,exact_accuracy,49.67,best accuracy of the non-recursive baseline,yes,24000,341.34,355.58
+Sudoku-Extreme,h512_d18_recipe_b192_s1,512,18,1,exact_accuracy,50.07,best accuracy of D_eff=18,yes,24000,341.34,355.58
+Sudoku-Extreme,h512_d18_recipe_b192_s1,512,18,1,exact_accuracy,36.26,best accuracy of D_eff=36,yes,14000,199.20,355.58
+Sudoku-Extreme,h512_d18_recipe_b192_s2,512,18,2,exact_accuracy,50,"50% exact, the headline target",no,,,357.83
+Sudoku-Extreme,h512_d18_recipe_b192_s2,512,18,2,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,357.83
+Sudoku-Extreme,h512_d18_recipe_b192_s2,512,18,2,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,357.83
+Sudoku-Extreme,h512_d18_recipe_b192_s2,512,18,2,exact_accuracy,36.26,best accuracy of D_eff=36,yes,14000,199.90,357.83
+Sudoku-Extreme,h512_d36_recipe_b96_s0,512,36,0,exact_accuracy,50,"50% exact, the headline target",no,,,340.94
+Sudoku-Extreme,h512_d36_recipe_b96_s0,512,36,0,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,340.94
+Sudoku-Extreme,h512_d36_recipe_b96_s0,512,36,0,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,340.94
+Sudoku-Extreme,h512_d36_recipe_b96_s0,512,36,0,exact_accuracy,36.26,best accuracy of D_eff=36,no,,,340.94
+Sudoku-Extreme,h512_d36_recipe_b96_s1,512,36,1,exact_accuracy,50,"50% exact, the headline target",no,,,336.64
+Sudoku-Extreme,h512_d36_recipe_b96_s1,512,36,1,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,336.64
+Sudoku-Extreme,h512_d36_recipe_b96_s1,512,36,1,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,336.64
+Sudoku-Extreme,h512_d36_recipe_b96_s1,512,36,1,exact_accuracy,36.26,best accuracy of D_eff=36,yes,24000,323.20,336.64
+Sudoku-Extreme,h512_d36_recipe_b96_s2,512,36,2,exact_accuracy,50,"50% exact, the headline target",no,,,343.52
+Sudoku-Extreme,h512_d36_recipe_b96_s2,512,36,2,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,343.52
+Sudoku-Extreme,h512_d36_recipe_b96_s2,512,36,2,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,343.52
+Sudoku-Extreme,h512_d36_recipe_b96_s2,512,36,2,exact_accuracy,36.26,best accuracy of D_eff=36,no,,,343.52
+Sudoku-Extreme,h512_d9_recipe_b192_s0,512,9,0,exact_accuracy,50,"50% exact, the headline target",yes,32000,259.20,404.95
+Sudoku-Extreme,h512_d9_recipe_b192_s0,512,9,0,exact_accuracy,49.67,best accuracy of the non-recursive baseline,yes,32000,259.20,404.95
+Sudoku-Extreme,h512_d9_recipe_b192_s0,512,9,0,exact_accuracy,50.07,best accuracy of D_eff=18,yes,32000,259.20,404.95
+Sudoku-Extreme,h512_d9_recipe_b192_s0,512,9,0,exact_accuracy,36.26,best accuracy of D_eff=36,yes,20000,161.96,404.95
+Sudoku-Extreme,h512_d9_recipe_b192_s1,512,9,1,exact_accuracy,50,"50% exact, the headline target",yes,36000,289.31,401.91
+Sudoku-Extreme,h512_d9_recipe_b192_s1,512,9,1,exact_accuracy,49.67,best accuracy of the non-recursive baseline,yes,36000,289.31,401.91
+Sudoku-Extreme,h512_d9_recipe_b192_s1,512,9,1,exact_accuracy,50.07,best accuracy of D_eff=18,yes,36000,289.31,401.91
+Sudoku-Extreme,h512_d9_recipe_b192_s1,512,9,1,exact_accuracy,36.26,best accuracy of D_eff=36,yes,20000,160.55,401.91
+Sudoku-Extreme,h512_d9_recipe_b192_s2,512,9,2,exact_accuracy,50,"50% exact, the headline target",yes,32000,255.61,399.91
+Sudoku-Extreme,h512_d9_recipe_b192_s2,512,9,2,exact_accuracy,49.67,best accuracy of the non-recursive baseline,yes,32000,255.61,399.91
+Sudoku-Extreme,h512_d9_recipe_b192_s2,512,9,2,exact_accuracy,50.07,best accuracy of D_eff=18,yes,32000,255.61,399.91
+Sudoku-Extreme,h512_d9_recipe_b192_s2,512,9,2,exact_accuracy,36.26,best accuracy of D_eff=36,yes,20000,159.72,399.91
+Sudoku-Extreme,h512_transformers_baseline_b192_s0,512,none,0,exact_accuracy,50,"50% exact, the headline target",yes,100000,383.53,383.57
+Sudoku-Extreme,h512_transformers_baseline_b192_s0,512,none,0,exact_accuracy,49.67,best accuracy of the non-recursive baseline,yes,100000,383.53,383.57
+Sudoku-Extreme,h512_transformers_baseline_b192_s0,512,none,0,exact_accuracy,50.07,best accuracy of D_eff=18,yes,100000,383.53,383.57
+Sudoku-Extreme,h512_transformers_baseline_b192_s0,512,none,0,exact_accuracy,36.26,best accuracy of D_eff=36,yes,36000,138.04,383.57
+Sudoku-Extreme,h512_transformers_baseline_b192_s1,512,none,1,exact_accuracy,50,"50% exact, the headline target",yes,84000,322.84,384.43
+Sudoku-Extreme,h512_transformers_baseline_b192_s1,512,none,1,exact_accuracy,49.67,best accuracy of the non-recursive baseline,yes,76000,292.05,384.43
+Sudoku-Extreme,h512_transformers_baseline_b192_s1,512,none,1,exact_accuracy,50.07,best accuracy of D_eff=18,yes,84000,322.84,384.43
+Sudoku-Extreme,h512_transformers_baseline_b192_s1,512,none,1,exact_accuracy,36.26,best accuracy of D_eff=36,yes,40000,153.46,384.43
+Sudoku-Extreme,h512_transformers_baseline_b192_s2,512,none,2,exact_accuracy,50,"50% exact, the headline target",no,,,384.08
+Sudoku-Extreme,h512_transformers_baseline_b192_s2,512,none,2,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,384.08
+Sudoku-Extreme,h512_transformers_baseline_b192_s2,512,none,2,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,384.08
+Sudoku-Extreme,h512_transformers_baseline_b192_s2,512,none,2,exact_accuracy,36.26,best accuracy of D_eff=36,yes,40000,153.88,384.08
+Sudoku-Extreme,h768_d18_recipe_b128_s0,768,18,0,exact_accuracy,50,"50% exact, the headline target",no,,,315.16
+Sudoku-Extreme,h768_d18_recipe_b128_s0,768,18,0,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,315.16
+Sudoku-Extreme,h768_d18_recipe_b128_s0,768,18,0,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,315.16
+Sudoku-Extreme,h768_d18_recipe_b128_s0,768,18,0,exact_accuracy,36.26,best accuracy of D_eff=36,yes,13914,227.18,315.16
+Sudoku-Extreme,h768_d18_recipe_b128_s1,768,18,1,exact_accuracy,50,"50% exact, the headline target",no,,,313.72
+Sudoku-Extreme,h768_d18_recipe_b128_s1,768,18,1,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,313.72
+Sudoku-Extreme,h768_d18_recipe_b128_s1,768,18,1,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,313.72
+Sudoku-Extreme,h768_d18_recipe_b128_s1,768,18,1,exact_accuracy,36.26,best accuracy of D_eff=36,yes,16233,263.73,313.72
+Sudoku-Extreme,h768_d18_recipe_b128_s2,768,18,2,exact_accuracy,50,"50% exact, the headline target",no,,,311.30
+Sudoku-Extreme,h768_d18_recipe_b128_s2,768,18,2,exact_accuracy,49.67,best accuracy of the non-recursive baseline,no,,,311.30
+Sudoku-Extreme,h768_d18_recipe_b128_s2,768,18,2,exact_accuracy,50.07,best accuracy of D_eff=18,no,,,311.30
+Sudoku-Extreme,h768_d18_recipe_b128_s2,768,18,2,exact_accuracy,36.26,best accuracy of D_eff=36,yes,15460,249.04,311.30
+Maze-Hard,h256_d18_recipe_b48_s0,256,18,0,accuracy,86.8,best token accuracy of D_eff=18,yes,1916,48.19,302.20
+Maze-Hard,h256_d18_recipe_b48_s1,256,18,1,accuracy,86.8,best token accuracy of D_eff=18,no,,,308.20
+Maze-Hard,h256_d18_recipe_b48_s2,256,18,2,accuracy,86.8,best token accuracy of D_eff=18,yes,1916,49.11,307.81
+Maze-Hard,h256_d18_recipe_b48_s3,256,18,3,accuracy,86.8,best token accuracy of D_eff=18,no,,,300.23
+Maze-Hard,h256_d18_recipe_b48_s4,256,18,4,accuracy,86.8,best token accuracy of D_eff=18,no,,,298.17
+Maze-Hard,h256_d36_recipe_b24_s0,256,36,0,accuracy,86.8,best token accuracy of D_eff=18,no,,,326.47
+Maze-Hard,h256_d36_recipe_b24_s1,256,36,1,accuracy,86.8,best token accuracy of D_eff=18,no,,,327.34
+Maze-Hard,h256_d36_recipe_b24_s2,256,36,2,accuracy,86.8,best token accuracy of D_eff=18,no,,,329.33
+Maze-Hard,h256_d36_recipe_b24_s3,256,36,3,accuracy,86.8,best token accuracy of D_eff=18,no,,,318.70
+Maze-Hard,h256_d36_recipe_b24_s4,256,36,4,accuracy,86.8,best token accuracy of D_eff=18,yes,5038,139.49,316.82
+Maze-Hard,h256_d9_recipe_b48_s0,256,9,0,accuracy,86.8,best token accuracy of D_eff=18,no,,,312.98
+Maze-Hard,h256_d9_recipe_b48_s1,256,9,1,accuracy,86.8,best token accuracy of D_eff=18,no,,,318.77
+Maze-Hard,h256_d9_recipe_b48_s2,256,9,2,accuracy,86.8,best token accuracy of D_eff=18,yes,1916,25.50,318.00
+Maze-Hard,h256_d9_recipe_b48_s3,256,9,3,accuracy,86.8,best token accuracy of D_eff=18,no,,,312.29
+Maze-Hard,h256_d9_recipe_b48_s4,256,9,4,accuracy,86.8,best token accuracy of D_eff=18,no,,,309.85
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d18_recipe_b48_s0,256,18,0,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",yes,6078,159.31,284.93
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d18_recipe_b48_s0,256,18,0,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",yes,6078,159.31,284.93
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d18_recipe_b48_s1,256,18,1,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",no,,,283.47
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d18_recipe_b48_s1,256,18,1,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",no,,,283.47
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d18_recipe_b48_s2,256,18,2,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",yes,7818,203.30,282.28
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d18_recipe_b48_s2,256,18,2,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",yes,10422,270.93,282.28
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d18_recipe_b48_s3,256,18,3,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",no,,,277.25
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d18_recipe_b48_s3,256,18,3,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",no,,,277.25
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d18_recipe_b48_s4,256,18,4,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",yes,6948,176.82,276.25
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d18_recipe_b48_s4,256,18,4,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",yes,8248,209.86,276.25
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d36_recipe_b24_s0,256,36,0,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",no,,,283.06
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d36_recipe_b24_s0,256,36,0,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",no,,,283.06
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d36_recipe_b24_s1,256,36,1,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",yes,2163,67.07,279.61
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d36_recipe_b24_s1,256,36,1,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",yes,2163,67.07,279.61
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d36_recipe_b24_s2,256,36,2,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",no,,,279.17
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d36_recipe_b24_s2,256,36,2,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",no,,,279.17
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d36_recipe_b24_s3,256,36,3,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",yes,2165,65.87,273.48
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d36_recipe_b24_s3,256,36,3,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",no,,,273.48
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d36_recipe_b24_s4,256,36,4,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",no,,,272.57
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d36_recipe_b24_s4,256,36,4,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",no,,,272.57
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d9_recipe_b48_s0,256,9,0,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",yes,6083,81.49,292.18
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d9_recipe_b48_s0,256,9,0,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",yes,14775,198.42,292.18
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d9_recipe_b48_s1,256,9,1,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",yes,7820,105.09,292.85
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d9_recipe_b48_s1,256,9,1,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",yes,7820,105.09,292.85
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d9_recipe_b48_s2,256,9,2,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",yes,21728,290.57,290.61
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d9_recipe_b48_s2,256,9,2,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",no,,,290.61
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d9_recipe_b48_s3,256,9,3,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",yes,12168,159.61,285.22
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d9_recipe_b48_s3,256,9,3,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",yes,12168,159.61,285.22
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d9_recipe_b48_s4,256,9,4,accuracy,30.59,"best token accuracy of D_eff=36, OLD e512 subset",yes,10428,136.57,284.46
+"ARC-AGI-1 subset lama e512 (1 task, TIDAK SAH)",h256_d9_recipe_b48_s4,256,9,4,accuracy,33.3,"best token accuracy of D_eff=18, OLD e512 subset",yes,13036,170.69,284.46
+ARC-AGI-1 (g400),h256_d9_recipe_b48_s0,256,9,0,accuracy,62.52,"best token accuracy of D_eff=36, g400 subset",yes,5214,67.91,284.14
+ARC-AGI-1 (g400),h256_d9_recipe_b48_s1,256,9,1,accuracy,62.52,"best token accuracy of D_eff=36, g400 subset",yes,16512,216.54,284.96
+ARC-AGI-1 (g400),h256_d9_recipe_b48_s2,256,9,2,accuracy,62.52,"best token accuracy of D_eff=36, g400 subset",yes,4346,57.08,284.86
+ARC-AGI-1 (g400),h256_d9_recipe_b48_s3,256,9,3,accuracy,62.52,"best token accuracy of D_eff=36, g400 subset",yes,3476,45.31,284.11
+ARC-AGI-1 (g400),h256_d9_recipe_b48_s4,256,9,4,accuracy,62.52,"best token accuracy of D_eff=36, g400 subset",yes,7819,101.98,283.61
+ARC-AGI-1 (g400),h256_d36_recipe_b24_s0,256,36,0,accuracy,62.52,"best token accuracy of D_eff=36, g400 subset",yes,3609,213.97,267.58
+ARC-AGI-1 (g400),h256_d36_recipe_b24_s1,256,36,1,accuracy,62.52,"best token accuracy of D_eff=36, g400 subset",yes,3429,203.66,268.00
+ARC-AGI-1 (g400),h256_d36_recipe_b24_s2,256,36,2,accuracy,62.52,"best token accuracy of D_eff=36, g400 subset",yes,4149,246.54,268.02
+ARC-AGI-1 (g400),h256_d36_recipe_b24_s3,256,36,3,accuracy,62.52,"best token accuracy of D_eff=36, g400 subset",no,,,268.03
+ARC-AGI-1 (g400),h256_d36_recipe_b24_s4,256,36,4,accuracy,62.52,"best token accuracy of D_eff=36, g400 subset",no,,,267.53

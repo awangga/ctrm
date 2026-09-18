@@ -1,0 +1,4 @@
+tag,hidden,D_eff,batch,accum,eff_batch,ema,steps_target,wall_s,best_exact_pct,final_exact_pct,final_token_pct,best_token_pct,smi_net_Wh,cc_gpu_Wh,gross_agree_pct
+h512_d36_recipe_b96_s0,512,36,96,2,192,True,12500,8190.1,31.4453,31.25,75.3954,75.3954,339.12,345.9513,98.89
+h512_d36_recipe_b96_s1,512,36,96,2,192,True,12500,8054.1,31.25,31.25,75.6004,75.6004,336.3333,342.9819,98.88
+h512_d36_recipe_b96_s2,512,36,96,2,192,True,12500,8054.0,32.4219,31.8359,76.0248,76.237,336.3293,343.0105,98.89

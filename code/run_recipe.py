@@ -21,6 +21,7 @@ STEPS = int(os.environ.get("STEPS", "25000")); NEVAL = int(os.environ.get("NEVAL
 BATCH = int(os.environ.get("BATCH", "192")); SEED = int(os.environ.get("SEED", "0"))
 EMA = os.environ.get("EMA", "True"); GROUPS = int(os.environ.get("GROUPS", "1000")); IDLE_W = 4.7
 ARCH = os.environ.get("ARCH", "trm")   # 'trm' (recursive) atau 'transformers_baseline' (non-recursive)
+HEADS = os.environ.get("HEADS", "")    # kosong = pakai default konfig arch; wajib diisi bila hidden/num_heads ganjil
 # Fase BM: ACCUM>1 menjalankan ACCUM micro-batch per langkah optimizer (patch
 # patch_pretrain_accum_preds.py). BATCH tetap ukuran micro-batch yang dimuat GPU; batch
 # EFEKTIF per langkah optimizer = BATCH*ACCUM, dan itulah yang menentukan langkah/epoch.
@@ -94,6 +95,12 @@ def main():
                f"epochs={EPOCHS}", f"eval_interval={EI}", f"seed={SEED}", "lr=1e-4", "puzzle_emb_lr=1e-4",
                "weight_decay=1.0", "puzzle_emb_weight_decay=1.0",
                f"arch.hidden_size={HIDDEN}", f"global_batch_size={BATCH}", f"+run_name={tag}", f"ema={EMA}"]
+        # RoPE membelah head_dim lewat rotate_half, jadi head_dim WAJIB genap. Konfig arch
+        # transformers_baseline mengunci num_heads=12: pada hidden=512 itu head_dim 42 (aman),
+        # tetapi pada hidden=256 menjadi 21 dan run mati seketika (fase BM batch B, 17 Sep 2026).
+        # HEADS dibiarkan kosong secara default supaya run lama tetap reproducible apa adanya.
+        if HEADS:
+            cmd.append(f"arch.num_heads={HEADS}")
     try:
         with open(logf, "w") as lf:
             subprocess.run(cmd, cwd=TRM, env=env, stdout=lf, stderr=subprocess.STDOUT, timeout=43200)

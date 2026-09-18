@@ -24,6 +24,12 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 IDLE_W = 4.7           # daya idle terukur, dikurangkan spt Eq. (2) di naskah
 GRID = 0.67593         # kg CO2e/kWh, dari CodeCarbon (Indonesia), konstan di semua run
+# Fase BS: ARC dibaca HANYA dari subset sah arc1-aug1k-g400 (400 task). Folder lama
+# (arc_depth_out, arc_d36_accum_out, arc_d9_preds_out) memakai subset arc1-aug1k-e512 yang
+# ternyata augmentasi SATU task, sehingga tidak dipakai untuk figur hasil.
+ARC_G400_D9 = "arc_d9_g400_out"
+ARC_G400 = [f"{ARC_G400_D9}/recipe_summary.csv", "arc_d36_g400_out/recipe_summary.csv"]
+ARC_COPY_INPUT = 60.75  # baseline copy-input token pada subset g400, ablation/trivial_baselines.md
 
 # Gbr. 6 = dua panel berdampingan; ukuran fontnya dikunci lewat dua konstanta ini supaya
 # panel kiri tidak terbaca lebih kecil daripada kanan. Skala cetak diukur dari lebar PDF
@@ -298,25 +304,28 @@ def perseed_table(data_root):
     import collections
     import re as _re
     import statistics as _st
-    src = [("Sudoku-Extreme (exact)", "recipe_out/recipe_summary.csv", "best_exact_pct"),
-           ("Maze-Hard (token)", "maze_depth_out/recipe_summary.csv", "best_token_pct"),
-           ("ARC-AGI-1 (token)", "arc_depth_out/recipe_summary.csv", "best_token_pct")]
+    # Fase BS: ARC dibaca dari subset sah arc1-aug1k-g400 (400 task). Folder lama arc_depth_out
+    # memakai subset yang ternyata satu task beserta augmentasinya, jadi tidak dipakai lagi.
+    src = [("Sudoku-Extreme (exact)", ["recipe_out/recipe_summary.csv"], "best_exact_pct", (0, 1, 2)),
+           ("Maze-Hard (token)", ["maze_depth_out/recipe_summary.csv"], "best_token_pct", (0, 1, 2)),
+           ("ARC-AGI-1 (token, subset g400)", ARC_G400, "best_token_pct", (0, 1, 2, 3, 4))]
     print("\n  Akurasi per seed (rezim faithful):")
-    for task, rel, col in src:
-        path = os.path.join(data_root, rel)
-        if not os.path.exists(path):
+    for task, rels, col, seeds in src:
+        paths = [os.path.join(data_root, rel) for rel in rels]
+        if not all(os.path.exists(p) for p in paths):
             continue
         groups = collections.defaultdict(dict)
-        for r in csv.DictReader(open(path)):
-            m = _re.search(r"_s(\d+)$", r["tag"])
-            if not m:
-                continue
-            groups[r["tag"][:m.start()]][int(m.group(1))] = float(r[col])
+        for path in paths:
+            for r in csv.DictReader(open(path)):
+                m = _re.search(r"_s(\d+)$", r["tag"])
+                if not m:
+                    continue
+                groups[r["tag"][:m.start()]][int(m.group(1))] = float(r[col])
         print(f"    {task}")
         for base in sorted(groups):
             v = groups[base]
             got = [v[s] for s in sorted(v)]
-            cells = " ".join(f"{v[s]:6.2f}" if s in v else "    --" for s in (0, 1, 2))
+            cells = " ".join(f"{v[s]:6.2f}" if s in v else "    --" for s in seeds)
             sd = _st.stdev(got) if len(got) > 1 else 0.0
             print(f"      {base:40s} {cells}  -> {_st.mean(got):5.1f} +/- {sd:.1f}")
 
@@ -421,19 +430,23 @@ def iso_accuracy_energy(data_root):
 
 
 def iso_accuracy_energy_arc(data_root):
-    """ARC-AGI-1 (token, checkpoint terbaik): energi D9 untuk menyamai akurasi terbaik D36."""
+    """ARC-AGI-1 (token, checkpoint terbaik): energi D9 untuk menyamai akurasi terbaik D36.
+
+    Fase BS: subset sah arc1-aug1k-g400. Target = rerata akurasi token terbaik D36 pada
+    subset itu, dihitung dari summary CSV (tidak dipatok).
+    """
     import statistics as _st
-    arc = os.path.join(data_root, "arc_depth_out")
-    sp = os.path.join(arc, "recipe_summary.csv")
-    if not os.path.exists(sp):
+    d9dir = os.path.join(data_root, ARC_G400_D9)
+    d36sp = os.path.join(data_root, ARC_G400[1])
+    if not os.path.exists(d36sp):
         return
-    rows = list(csv.DictReader(open(sp)))
+    rows = list(csv.DictReader(open(d36sp)))
     d36 = [float(r["best_token_pct"]) for r in rows if r["D_eff"] == "36"]
     wh36 = [float(r["smi_net_Wh"]) for r in rows if r["D_eff"] == "36"]
     target, rival_wh = _st.mean(d36), _st.mean(wh36)
     per = []
     for seed in range(5):
-        tr = trajectory(f"h256_d9_recipe_b48_s{seed}", arc, metric="all/accuracy")
+        tr = trajectory(f"h256_d9_recipe_b48_s{seed}", d9dir, metric="all/accuracy")
         if tr is None:
             continue
         x, y = tr
@@ -443,7 +456,7 @@ def iso_accuracy_energy_arc(data_root):
     cells = ", ".join(f"{v:.0f}" if v is not None else "--" for v in per)
     if ok:
         m = _st.mean(ok); sd = _st.stdev(ok) if len(ok) > 1 else 0.0
-        print(f"\n  ARC iso-akurasi (token, checkpoint terbaik): D9 menyamai D36 {target:.2f}%: "
+        print(f"\n  ARC iso-akurasi (token, checkpoint terbaik, subset g400): D9 menyamai D36 {target:.2f}%: "
               f"D9=[{cells}] -> {m:.0f}+/-{sd:.0f} Wh ({len(ok)}/{len(per)}); D36 spent {rival_wh:.0f} Wh, "
               f"hemat {100*(rival_wh-m)/rival_wh:.0f}%")
 
@@ -454,22 +467,26 @@ def fig_crosstask(out_path, data_root):
     import statistics as _st
     # Fase BM: tiap panel menampilkan garis baseline sepele metriknya (trivial_baselines.py),
     # karena tanpa garis itu panel Maze menyesatkan: seluruh rentangnya ada DI BAWAH 87,51%.
-    src = [("Sudoku-Extreme", "recipe_out/recipe_summary.csv", "best_exact_pct",
+    # Fase BS: ARC dari subset sah arc1-aug1k-g400 (dua folder, D9 dan D36 saja; tidak ada D18
+    # pada subset sah). Garis baseline ARC = copy-input 60,75% pada subset yang sama
+    # (ablation/trivial_baselines.md), setara Maze yang juga memakai copy-input.
+    src = [("Sudoku-Extreme", ["recipe_out/recipe_summary.csv"], "best_exact_pct",
             "Exact accuracy (%)", ("h512_d9_recipe", "h512_d18_recipe", "h512_d36_recipe"), 0.0),
-           ("ARC-AGI-1", "arc_depth_out/recipe_summary.csv", "best_token_pct",
-            "Token accuracy (%)", ("h256_d9_recipe", "h256_d18_recipe", "h256_d36_recipe"), 25.0),
-           ("Maze-Hard", "maze_depth_out/recipe_summary.csv", "best_token_pct",
+           ("ARC-AGI-1", ARC_G400, "best_token_pct",
+            "Token accuracy (%)", ("h256_d9_recipe", None, "h256_d36_recipe"), ARC_COPY_INPUT),
+           ("Maze-Hard", ["maze_depth_out/recipe_summary.csv"], "best_token_pct",
             "Token accuracy (%)", ("h256_d9_recipe", "h256_d18_recipe", "h256_d36_recipe"), 87.51)]
     fig, axes = plt.subplots(1, 3, figsize=(6.6, 2.5))
-    for ax, (task, rel, col, ylab, prefixes, base) in zip(axes, src):
-        path = os.path.join(data_root, rel)
-        if not os.path.exists(path):
+    for ax, (task, rels, col, ylab, prefixes, base) in zip(axes, src):
+        paths = [os.path.join(data_root, rel) for rel in rels]
+        if not all(os.path.exists(p) for p in paths):
             continue
         vals = collections.defaultdict(list)
-        for r in csv.DictReader(open(path)):
-            for d, pre in zip((9, 18, 36), prefixes):
-                if r["tag"].startswith(pre):
-                    vals[d].append(float(r[col]))
+        for path in paths:
+            for r in csv.DictReader(open(path)):
+                for d, pre in zip((9, 18, 36), prefixes):
+                    if pre is not None and r["tag"].startswith(pre):
+                        vals[d].append(float(r[col]))
         xs = sorted(vals)
         m = [_st.mean(vals[d]) for d in xs]
         e = [_st.stdev(vals[d]) if len(vals[d]) > 1 else 0.0 for d in xs]
@@ -670,14 +687,15 @@ def fig_baseline_distance(out_path, data_root):
     from stats_table import welch
     rec = os.path.join(data_root, "recipe_out")
     # Baseline sepele dari ablation/trivial_baselines.md. Sudoku memakai akurasi EXACT, yang
-    # baseline sepelenya 0%; Maze dan ARC memakai akurasi token (copy-input 87,51% dan 25,00%).
+    # baseline sepelenya 0%; Maze dan ARC memakai akurasi token (copy-input 87,51% dan 60,75%).
+    # Fase BS: ARC dari subset sah arc1-aug1k-g400, hanya D9 dan D36 (tak ada D18 di sana).
     specs = [
         ("Sudoku-Extreme", "exact", os.path.join(rec, "recipe_summary.csv"), "best_exact_pct",
          lambda r: r["hidden"] == "512" and "recipe" in r["tag"], 0.0, "informative"),
-        ("ARC-AGI-1", "token", os.path.join(data_root, "arc_depth_out", "recipe_summary.csv"),
-         "best_token_pct", lambda r: True, 25.0, "informative"),
+        ("ARC-AGI-1", "token", [os.path.join(data_root, rel) for rel in ARC_G400],
+         "best_token_pct", lambda r: True, ARC_COPY_INPUT, "informative"),
         ("Maze-Hard", "token", os.path.join(data_root, "maze_depth_out", "recipe_summary.csv"),
-         "best_token_pct", lambda r: True, 87.5, "at floor"),
+         "best_token_pct", lambda r: True, 87.51, "at floor"),
     ]
     fig, (axL, axR) = plt.subplots(1, 2, figsize=(6.6, 3.0), sharey=True,
                                    gridspec_kw={"width_ratios": [1.55, 1.0], "wspace": 0.08})
@@ -687,19 +705,21 @@ def fig_baseline_distance(out_path, data_root):
     for row, (task, metric, path, col, filt, base, status) in enumerate(specs):
         y = len(specs) - 1 - row
         groups = {}
-        for r in csv.DictReader(open(path)):
-            if filt(r):
-                groups.setdefault(r["D_eff"], []).append(float(r[col]))
+        for pth in (path if isinstance(path, list) else [path]):
+            for r in csv.DictReader(open(pth)):
+                if filt(r):
+                    groups.setdefault(r["D_eff"], []).append(float(r[col]))
         means = {k: float(np.mean(v)) for k, v in groups.items()}
         # Fase BM: sumbu kiri adalah JARAK ke baseline sepele, bukan akurasi absolut. Pada skala
         # absolut 0-100% jarak Maze (-1 poin) tak terlihat, sehingga pesan utama figur hilang.
         axL.plot([-6, 94], [y, y], color="0.88", lw=5, solid_capstyle="butt", zorder=1)
-        for k in ("9", "18", "36"):
+        depths = [k for k in ("9", "18", "36") if k in groups]
+        for k in depths:
             axL.errorbar(means[k] - base, y, xerr=np.std(groups[k], ddof=1), fmt=marks[k], ms=4.4,
                          color=shades[status], ecolor=shades[status], elinewidth=1, capsize=2,
                          zorder=3, mfc="white" if status == "at floor" else shades[status])
-        lo_d = min(means[k] - base for k in ("9", "18", "36"))
-        hi_d = max(means[k] - base for k in ("9", "18", "36"))
+        lo_d = min(means[k] - base for k in depths)
+        hi_d = max(means[k] - base for k in depths)
         axL.annotate(f"{lo_d:+.1f} to {hi_d:+.1f}", (hi_d, y), textcoords="offset points",
                      xytext=(8, -2), fontsize=7.4, color=shades[status], va="center")
         d9, d36 = groups["9"], groups["36"]
@@ -711,6 +731,9 @@ def fig_baseline_distance(out_path, data_root):
                      elinewidth=1.3, capsize=3, mfc=shades[status] if sig else "white", zorder=3)
         axR.text(diff - 1.2, y - 0.34, (f"{diff:+.1f}" + ("" if sig else " n.s.")), ha="right",
                  fontsize=8.6, color=shades[status])
+        print(f"    {task:15s} jarak ke baseline {base:g}%: "
+              + ", ".join(f"D{k} {means[k] - base:+.2f}" for k in depths)
+              + f";  D36-D9 {diff:+.2f}, CI95 Welch [{diff - ci:+.2f}, {diff + ci:+.2f}], p={pval:.4g}")
         ylabels.append((y, f"{task}\n({metric}), {status}"))
     axL.axvline(0, color=OI["vermillion"], lw=1.1, zorder=2)
     axL.text(0, len(specs) - 0.5, "trivial baseline", rotation=90, ha="right", va="top",

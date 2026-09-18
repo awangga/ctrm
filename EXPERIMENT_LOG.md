@@ -3080,3 +3080,129 @@ harus ditutup lebih dulu dan dicocokkan dengan `grep -rn` ke seluruh repo, bukan
 dianggap lengkap.
 
 Commit: lihat entri berikutnya. Rantai BM tetap berjalan.
+
+---
+
+## Fase BS: subset evaluasi ARC diperbaiki, hasil pra-registrasi masuk (17-18 September 2026)
+
+### Temuan yang memicu fase ini
+
+Audit fase BR menemukan bahwa seluruh 25 run ARC proyek memakai subset evaluasi `arc1-aug1k-e512`
+yang ternyata **satu task ARC beserta augmentasinya**: `make_small_eval.py` memotong test split dengan
+`[:N]`, dan karena test split ARC diaugmentasi ~1001 contoh per grup, 512 baris pertama seluruhnya
+jatuh di grup 0. Bukti: 512 contoh tetapi 72 label unik, tiap contoh persis 48 posisi berlabel, dan
+indeksnya tidak konsisten. Sudoku dan Maze memakai subset sehat dan tidak terpengaruh.
+
+`make_group_eval.py` membangun `arc1-aug1k-g400`: satu puzzle asli per grup, 400 task, 419 contoh,
+419 label unik, posisi berlabel 3-900 (median 159). AMANDEMEN 5 dipra-registrasi dan di-commit
+(`c6a4cfa`) SEBELUM run apa pun. Uji-asap menangkap satu cacat lagi sebelum 19 jam GPU terbakar:
+`PATH` venv belum disetel di skrip baru sehingga subprocess memanggil `python` sistem dan run mati
+2 detik (sidik jari sama dengan batch B). Setelah diperbaiki, uji-asap jalan 113 s dan npz prediksi
+melaporkan `seen=419`, persis jumlah contoh subset baru.
+
+### Integritas 10 run
+
+Kesepuluhnya sehat: wall 6.220-6.725 s, cross-val 98,91-98,97% (semua di atas lantai 98,8%), batch
+efektif 48 di kedua lengan, 25 npz per run, ketiga artefak wajib ada, dan kesepuluhnya terkonfirmasi
+memakai `data/arc1-aug1k-g400`.
+
+### Baseline sepele dihitung ulang LEBIH DULU (Amandemen 5 butir 4, aturan #9)
+
+| subset ARC | majority token | copy-input token |
+|---|---:|---:|
+| lama `-e512` (1 task) | 25,00% | 25,00% |
+| **sah `-g400` (400 task)** | **41,82%** | **60,75%** |
+
+`trivial_baselines.py` diperbaiki agar memakai SEMUA baris contoh, bukan `total_groups`: subset g400
+punya 400 grup tetapi 419 contoh, dan model dinilai pada ke-419-nya. Sudoku dan Maze tidak berubah
+(11,11/30,92 dan 50,03/87,51).
+
+`analyze_BS.py` ditulis dan di-commit (`69bb867`) SEBELUM akurasi model dibaca, lalu dijalankan sekali.
+
+### HASIL: kontras kedalaman ARC pada subset sah
+
+| | D9 | D36 |
+|---|---|---|
+| akurasi token terbaik per seed | 63,74 / 63,66 / 63,63 / 63,55 / 64,04 | 62,53 / 62,77 / 62,55 / 62,37 / 62,39 |
+| rerata | **63,72 +- 0,19%** | **62,52 +- 0,16%** |
+| di atas copy-input 60,75%? | ya (+2,97) | ya (+1,77) |
+| energi net per run | 284,3 +- 0,6 Wh | 267,8 +- 0,3 Wh |
+
+**D9 lawan D36: +1,20 poin**, Welch t=10,81, df=7,7, p<0,0001, d=6,84; permutasi eksak p=0,0079,
+tepat di lantainya (pemisahan TOTAL: seed D9 terburuk 63,55 di atas seed D36 terbaik 62,77).
+LOLOS Bonferroni 0,0167.
+
+**Pembacaan.** Arah bertahan dan buktinya lebih bersih: simpangan antar-seed turun dari +-3,2 ke
++-0,19 karena kini merata-rata 400 task, bukan augmentasi satu soal. Besarannya menyusut dari 5,7
+menjadi 1,2 poin, dan harus dibaca terhadap baseline sepele: model dangkal hanya 2,97 poin di atas
+menyalin input, model dalam 1,77 poin. **Kedalaman memakan sekitar 40% dari apa yang dipelajari model
+dangkal melampaui baseline sepele.** Angka lama "5,7 poin, p=0,012" dan baseline 25,00% SUPERSEDED.
+
+### HASIL: batch A2, Sudoku D36 dengan batch dipulihkan
+
+| kontras Sudoku | selisih |
+|---|---:|
+| D9 lawan D36, alokasi lama (batch 96) | +26,17 |
+| D9 lawan D36, alokasi baru (batch efektif 192) | **+30,73** |
+| D36 lama lawan D36 baru | D36 baru 4,56 poin LEBIH BURUK |
+
+Konfon batch bekerja MENGUNTUNGKAN D36. Setelah dibuang, beban kedalaman membesar. Angka 26 poin di
+naskah selama ini **konservatif**; yang sebenarnya sekitar 31 poin. Permutasi pada n=3 lawan 3 tidak
+bisa di bawah 0,10 (C(6,3)=20), jadi buktinya adalah pemisahan rentang per-seed, bukan desimal p.
+
+### Nasib batch lain
+
+- **A1** (ARC D36 akumulasi, 5 run) dan **C** (ARC D9 prediksi, 5 run): valid secara teknis tetapi pada
+  subset lama. Digantikan oleh 10 run g400.
+- **B** (baseline non-rekursif ARC): gagal konfigurasi RoPE, lalu dibatalkan atas keputusan penulis.
+  Kontrol non-rekursif hanya ada di Sudoku; dinyatakan sebagai keterbatasan.
+
+### Status
+
+Seluruh run selesai. **Naskah BELUM siap submit**: masih memuat semua angka ARC lama (36,3/33,3/30,6,
+5,7 poin, p=0,012, baseline 25,00%, 155 lawan 278 Wh) dan belum memuat hasil A2. Propagasi mengikuti
+`eksperimen/review/BR_checklist_propagasi_hasil_BM.md`, lalu gerbang pra-submit, lalu Zenodo v6.
+
+### Fase BS (lanjutan): propagasi hasil ke naskah (18 September 2026)
+
+Naskah diperbarui dengan hasil subset ARC sah dan batch A2 (commit `9653044`). Pola kerja: data dan kode
+dikerjakan koordinator (harus eksak dan dihasilkan skrip), prosa oleh enam agen per section dengan SATU
+lembar fakta bersama, lalu digabung dan diverifikasi.
+
+**Tabel A.1** dihasilkan `stats_table.py`, dibaca dari folder g400. Keluaran non-ARC diverifikasi
+IDENTIK byte-per-byte dengan tabel sebelumnya; hanya blok ARC yang berubah, dan dua kontras ARC yang
+melibatkan D18 dibuang. Total 13 kontras. Ambang sumbu ARC DIPAKSA 0,05/3 (bukan 0,05/1): desain sumbu
+kedalaman punya tiga tingkat, prinsip lama di skrip menyatakan ambang mengikuti kontras yang mungkin
+bukan yang ditabelkan, dan nilai itu dikunci Amandemen 5. Pada ambang seluruh-naskah 0,05/13 = 0,0038,
+empat kontras lolos: tiga Sudoku dan **ARC, yang dulu justru gugur di koreksi terketat**.
+
+**Generator tabel diperbaiki**: `pf()` mengeluarkan `5.6\times 10^{-5}` tanpa `$...$`, yang di sel tabel
+adalah error LaTeX (versi di naskah dulu diperbaiki tangan). Membungkus di dalam `pf()` merusak header
+yang sudah di mode matematika, jadi ditambahkan `pcell()` khusus sel.
+
+**Tiga kesalahan pembulatan dari fase BQ ditemukan dan dikoreksi** (KOREKSI KEJUJURAN): paragraf
+family-wise menulis p 0,0041, 0,0047, 0,0066; nilai persisnya 0,004046, 0,00463, 0,00655, jadi 0,0040,
+0,0046, 0,0065. Ketiganya ditulis koordinator pada fase BQ, dan gerbang pra-submit **menjaganya** sebagai
+invarian. Menjadi aturan repo #11.
+
+**Klaim "exact accuracy 0 on ARC" ternyata salah** di subset sah: D9 menyelesaikan persis 1 dari 419
+contoh (0,24%) di kelima seed, D36 di dua seed. Ditemukan karena dua agen menulis hal berbeda ("0" dan
+"near zero"). Diganti "at most 0.24%" di empat tempat. Klaim serupa untuk Maze tetap benar.
+
+**Agregat dari `reconcile_totals.py`**: 72 run faithful / 22,73 kWh; 116 total / 25,32 kWh; CO2e faithful
+15,4 kg. Driver: 37 run (99,11-99,95%) lawan 35 run (98,82-98,97%). 25 run ARC lama dihitung energinya
+tetapi tidak menopang klaim.
+
+**`trivial_baselines.py` diperbaiki**: memotong ke `total_groups` akan membuang 19 contoh subset g400
+(400 grup, 419 contoh) yang justru dinilai model. Kini memakai semua baris.
+
+**Figur**: `fig_crosstask_depth` dan `fig_baseline_distance` diregenerasi dari g400; efek ARC tercetak
+-1,20, CI95 Welch [-1,46, -0,95]. Konstanta baseline Maze di skrip figur 87,5 diselaraskan ke 87,51.
+Sudoku dan Maze diverifikasi tidak berubah.
+
+Lain-lain: overfull 136 pt baru dari jalur `\texttt{}` yang tak bisa dipatah (diberi `\allowbreak`);
+frasa Intro "cost a great deal" diperhalus karena ARC tinggal 1,2 poin; abstrak dipangkas ke 247 kata
+untuk margin; surat pengantar kini MENGUNGKAPKAN cacat subset ARC secara proaktif kepada editor.
+
+**Status**: 49 halaman, 0 error, gerbang pra-submit 106/106. Jaringan sesi pulih (Zenodo, Telegram,
+GitHub terjangkau). Sisa: dokumen paket Zenodo, terbitkan v6, konfirmasi CRediT, submit.
