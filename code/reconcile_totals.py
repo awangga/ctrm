@@ -37,7 +37,7 @@ SUMMARIES = [
     # `arc_baseline_FAILED_rope/` sengaja TIDAK didaftarkan: lima run mati 12 detik tanpa data.
     ("arc_d36_accum_out/recipe_summary.csv",             "faithful", "ARC D36 batch efektif dipulihkan (BM A1)"),
     ("sudoku_d36_accum_out/recipe_summary.csv",          "faithful", "Sudoku D36 batch efektif dipulihkan (BM A2)"),
-    ("arc_baseline_out/recipe_summary.csv",              "faithful", "baseline non-rekursif ARC (BM B)"),
+    # ("arc_baseline_out/...") DIBUANG fase BS: batch B gagal konfigurasi lalu dibatalkan, folder tidak ada.
     ("arc_d9_preds_out/recipe_summary.csv",              "faithful", "ARC D9 dgn prediksi per-instance (BM C)"),
     ("accum_check_out/recipe_summary.csv",               "verifikasi","verifikasi patch akumulasi gradien"),
     # --- fase BS: kontras kedalaman ARC pada subset evaluasi SAH (arc1-aug1k-g400, 400 task)

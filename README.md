@@ -213,7 +213,8 @@ seeds on Maze-Hard and on ARC-AGI-1.
   two seeds of three); mid-depth TRM ties it (D18 = 50.1 %, p = 0.82) and
   deep TRM is significantly worse (D36 = 36.3 %, p = 0.004). Recursion earns its keep only when shallow;
   deep recursion is significantly worse than no recursion at all.
-- **Energy cost model.** From the calibration microbenchmark (direct hardware measurement, regime-independent):
+- **Energy cost model.** From the calibration microbenchmark (direct hardware measurement; validated only at the
+  sequence length and batch at which it was measured, see cost-model validation below):
   per-step energy scales as (params x D_eff)^0.84 (R^2 = 0.98, bootstrap 95% CI [0.75, 0.92]).
 - **Checkpoint rule (all tasks).** A configuration is scored by its BEST evaluation checkpoint
   (`best_exact_pct` on Sudoku, `best_token_pct` on Maze/ARC), as in Algorithm 1 of the manuscript.
@@ -225,13 +226,33 @@ seeds on Maze-Hard and on ARC-AGI-1.
   the same effective batch as D9 (48, via 24 x 2 accumulation), so the contrast tests depth alone. Welch
   t = 10.81, df = 7.7, p = 6.1e-6, d = 6.84; exact permutation p = 0.0079 (the floor for five against five):
   the two depths **separate completely**, the worst D9 seed (63.55) above the best D36 seed (62.77). It
-  clears the per-axis Bonferroni threshold (0.0167) and the whole-paper threshold (0.05/13 = 0.0038). Both
+  clears the per-axis Bonferroni threshold (0.0167) and, in this best-checkpoint reading on the full subset
+  only, the whole-paper threshold (0.05/13 = 0.0038). Both
   arms sit above the copy-input baseline of 60.75% (D9 by 2.97 points, D36 by 1.77), so depth consumes
   about 40% of what the shallow model learns beyond the trivial baseline. Net energy per run: D9
-  284.3 ± 0.6 Wh, D36 267.8 ± 0.3 Wh. **D9 reaches D36's mean best accuracy (62.52%) on 98 ± 70 Wh (5 of 5
-  seeds) against the 268 Wh D36 spends in full, a 63% saving.** Only D9 and D36 were run on the valid
+  284.3 ± 0.6 Wh, D36 267.8 ± 0.3 Wh. **Energy to the same target (62.52%, D36's mean best accuracy), both
+  arms measured alike: D9 reaches it in 5 of 5 seeds on 98 ± 70 Wh (median 68, range 45-217); D36 reaches
+  it in only 3 of 5 seeds, on 221 ± 22 Wh (204-247).** The ratio is about 44% (98/221), and the per-seed
+  paired median is 32%. (An earlier draft of this package compared D9's energy-to-target with D36's whole-run 268 Wh and
+  quoted a 63% saving; that comparison was asymmetric and is withdrawn.) Only D9 and D36 were run on the valid
   subset, so ARC establishes the extreme contrast, not a graded depth axis. Pre-registered as amendment 5
   in `prereg_BM.md`; analysis `code/analyze_BS.py`, run once after all ten runs.
+- **ARC-AGI-1, held-out selection split (pre-registered, batch C, now on the valid subset).** The best
+  checkpoint is chosen on the even half of the subset (210 examples) and accuracy reported on the odd half
+  (209), from the per-instance predictions of the valid-subset runs. D9 = 65.42 ± 0.36 %, D36 = 64.70 ±
+  0.15 % (the halves differ in difficulty, so read the contrast, not the levels): **+0.73 points**, Welch
+  t = 4.17, df = 5.4, p = 0.0074, d = 2.64; exact permutation p = 0.0079 (floor). Complete separation
+  holds, narrowly (worst D9 seed 64.95 > best D36 seed 64.86). It clears the per-axis threshold (0.0167)
+  but **not** the whole-paper threshold (0.0038). The direction survives the control for selection bias;
+  the shrinkage from 1.20 to 0.73 suggests part of the 1.20 is selection optimism.
+- **ARC-AGI-1, final checkpoint.** D9 = 63.38 ± 0.48 %, D36 = 62.08 ± 0.53 %, **+1.30 points**, Welch
+  p = 0.0038; complete separation (worst D9 seed 62.81 > best D36 seed 62.62). Same direction under a
+  different checkpoint rule.
+- **ARC-AGI-1, train/test overlap checked: no pipeline leakage.** Following the upstream protocol
+  (`dataset/build_arc_dataset.py`), demonstration pairs of evaluation tasks enter training while their
+  test examples are held out, so all 400 test puzzle ids also appear in training by design; an exact check
+  finds 3 of 419 test (input, label) pairs (0.7%) identical to some training pair, affecting both depths
+  alike.
 - **Maze-Hard, depth axis (h256, FIVE seeds), token accuracy, best checkpoint** (exact = 0):
   D9 = 86.66 ± 0.18, D18 = 86.76 ± 0.09, D36 = 86.54 ± 0.29 %. **Null measurement, not a null effect.**
   On the same 512-instance subset, copying the input already scores **87.51%** token accuracy (path cells
@@ -246,7 +267,8 @@ seeds on Maze-Hard and on ARC-AGI-1.
 - **What the three tasks together support.** Added recursion depth never bought accuracy on any task
   measured. Where accuracy could be priced (Sudoku exact, ARC token above its trivial baseline) shallow
   recursion wins by 26 and 1.20 points (about 31 on Sudoku once the batch is matched) and reaches a given
-  accuracy on 161 vs 340 Wh and 98 vs 268 Wh.
+  accuracy for less than half the energy: 161 vs 340 Wh on Sudoku, and on ARC 98 Wh (5 of 5 seeds) vs
+  221 Wh (3 of 5 seeds) to the same target.
   Where it could not be priced (Maze token, below its trivial baseline) only the energy side is reported:
   the deepest setting costs 3% more for nothing measurable. Two measured points and one null measurement
   are not a cross-task generalisation, and the manuscript draws none from them.
