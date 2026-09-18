@@ -3206,3 +3206,35 @@ untuk margin; surat pengantar kini MENGUNGKAPKAN cacat subset ARC secara proakti
 
 **Status**: 49 halaman, 0 error, gerbang pra-submit 106/106. Jaringan sesi pulih (Zenodo, Telegram,
 GitHub terjangkau). Sisa: dokumen paket Zenodo, terbitkan v6, konfirmasi CRediT, submit.
+
+---
+
+## Fase BT: audit ulang desk + dua penelaah, lalu Zenodo v6 TERBIT (18 September 2026)
+
+**Audit empat lensa** atas naskah pasca-BS (desk editor, R1 energi, R2 statistik, koherensi lintas
+dokumen). Putusan desk: **KIRIM KE PENELAAH**; lensa kontribusi paling rapuh karena klaim ARC menyusut.
+Temuan utama dan penanganannya dicatat di commit `330d039`; ringkasnya:
+
+1. Pembelahan held-out batch C (pra-registrasi, belum pernah dilaporkan) dijalankan pada subset sah:
+   **+0,73 poin** (dari 1,20), p=0,0074, pemisahan total tipis. Lolos sumbu, tidak lolos seluruh-naskah.
+2. Joules-to-target ARC ternyata ASIMETRIS; diganti perbandingan setara (98 lawan 221 Wh, D36 hanya 3/5
+   seed). "63%" dicabut. Judul tetap sah: Sudoku 47/48/45% di tiap pembacaan.
+3. Kebocoran ARC diperiksa: tidak ada kebocoran pipeline (protokol upstream menahan contoh uji);
+   3 dari 419 pasangan kebetulan identik, setara di kedua kedalaman.
+4. Kronologi pencabutan klaim ARC 5,7 poin ditambahkan ke Threats.
+5. Uji A2 dilaporkan; checkpoint akhir ARC dilaporkan; alasan ambang 0,0167 diganti yang jujur.
+Semua angka baru tertelusur ke `analyze_BS_supplement.py` -> `ablation/bs_supplement.md`.
+
+**Nyaris terkirim**: tarball pertama dibangun SEBELUM dokumen paket diperbaiki, sehingga akan menerbitkan
+README yang masih menyebut cost model "regime-independent" dan penghematan "63%". Penerbitan ditahan,
+tarball dibangun ulang (md5 `23db...` -> `c7409e5c...`), diverifikasi ulang, baru terbit. Pemeriksaan
+kebocoran kredensial memakai pencarian NILAI token di seluruh isi tarball: nol kemunculan. Satu alarm
+palsu dari regex `.env` yang mencocokkan `rebuild_env.sh`.
+
+**Zenodo v6 TERBIT**: version DOI **`10.5281/zenodo.22822094`**; concept DOI `10.5281/zenodo.21181342`
+terverifikasi mengarah ke `records/22822094`. Empat berkas, md5 semua cocok dengan salinan lokal.
+Metadata warisan v5 ternyata masih memakai judul lama *"When recursion depth pays for its energy: a
+cross-task regime map..."*; v6 menggantinya dengan judul final. CRediT dikonfirmasi penulis.
+
+**Sisa sebelum submit**: surel penelaah usulan no. 3 (Xavier-de-Souza) di surat pengantar kosong dan
+TIDAK dikarang; harus diisi penulis.
